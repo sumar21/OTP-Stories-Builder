@@ -15,7 +15,7 @@ body {
   padding: 0;
   min-height: 100%;
   font-family: "Geist", "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
-  background: radial-gradient(circle at 20% -10%, #1f52ff 0%, var(--otp-blue) 45%, #082ca0 100%);
+  background: #0b38d6;
   color: #f6f8ff;
 }
 
