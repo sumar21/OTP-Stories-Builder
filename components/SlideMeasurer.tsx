@@ -1,0 +1,58 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { SlideRenderer } from "@/components/SlideRenderer";
+import type { DaySlice, PostData, SlideData } from "@/lib/types";
+
+export type SlideMeasureRequest = {
+  id: number;
+  version: number;
+  candidateDays: DaySlice[];
+};
+
+type SlideMeasurerProps = {
+  data: PostData;
+  request: SlideMeasureRequest | null;
+  onMeasured: (id: number, version: number, fits: boolean) => void;
+};
+
+export function SlideMeasurer({ data, request, onMeasured }: SlideMeasurerProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!request || !rootRef.current) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      const variableArea = rootRef.current?.querySelector<HTMLElement>("[data-variable-area]");
+      const cards = rootRef.current?.querySelector<HTMLElement>("[data-day-cards]");
+
+      if (!variableArea || !cards) {
+        onMeasured(request.id, request.version, false);
+        return;
+      }
+
+      const fits = cards.scrollHeight <= variableArea.clientHeight + 1;
+      onMeasured(request.id, request.version, fits);
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [request, onMeasured]);
+
+  const measureSlide: SlideData = {
+    slideIndex: 0,
+    totalSlides: 1,
+    days: request?.candidateDays ?? [],
+  };
+
+  return (
+    <div className="pointer-events-none fixed -left-[20000px] top-0 invisible" aria-hidden>
+      <div ref={rootRef}>
+        <SlideRenderer data={data} slide={measureSlide} />
+      </div>
+    </div>
+  );
+}

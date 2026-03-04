@@ -1,0 +1,11 @@
+:root {
+  --otp-blue: #0b38d6;
+  --otp-lime: #c9fd2e;
+  --otp-card: #092dab;
+  --otp-text-primary: #eef3ff;
+  --otp-text-muted: #a7b8e6;
+  --otp-line: rgba(181, 198, 255, 0.22);
+  --otp-shadow-soft: 0 16px 40px rgba(0, 17, 94, 0.26);
+  --otp-radius-xl: 42px;
+  --otp-radius-lg: 24px;
+}
