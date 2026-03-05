@@ -3,14 +3,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BuilderForm } from "@/components/BuilderForm";
 import { ExportButtons } from "@/components/ExportButtons";
+import { LoosePlayerBuilderForm } from "@/components/LoosePlayerBuilderForm";
 import { SlideMeasurer } from "@/components/SlideMeasurer";
 import type { SlideMeasureRequest } from "@/components/SlideMeasurer";
 import { SlideRenderer } from "@/components/SlideRenderer";
 import { SlidesPreview } from "@/components/SlidesPreview";
 import { computeSlides } from "@/lib/computeSlides";
-import { defaultPostData } from "@/lib/defaultPostData";
+import { defaultLoosePlayerPostData, defaultTournamentPostData } from "@/lib/defaultPostData";
+import { getDefaultSponsors } from "@/lib/defaultSponsors";
 import { exportAllSlidesZip, exportCurrentSlidePng } from "@/lib/exportSlides";
-import type { DaySlice, PostData, PostFormat, SlideData } from "@/lib/types";
+import type {
+  DaySlice,
+  LoosePlayerPost,
+  LoosePlayerSlideData,
+  PostFormat,
+  PostType,
+  SlideData,
+  Sponsor,
+  TournamentPostData,
+  TournamentSlideData,
+} from "@/lib/types";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { validatePostData } from "@/lib/validators";
 
@@ -18,24 +30,59 @@ const POST_CACHE_KEY = "otp-post-builder-data-v1";
 const GENDER_VALUES = new Set(["Masculino", "Femenino", "Mixto"]);
 const STATUS_VALUES = new Set(["DISPONIBLE", "ULTIMOS_CUPOS", "COMPLETO"]);
 const FORMAT_VALUES = new Set(["historia", "posteo"]);
+const HAND_VALUES = new Set(["DRIVE", "REVES", "INDISTINTO"]);
+const POST_TYPE_VALUES = new Set(["torneos", "jugador_suelto"]);
 
 type PendingMeasure = {
   id: number;
   version: number;
   resolve: (fits: boolean) => void;
 };
+
 type MobileTab = "builder" | "preview";
+
+type BuilderState = {
+  activePostType: PostType;
+  tournaments: TournamentPostData;
+  loosePlayer: LoosePlayerPost;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
-const withClosingSlide = (baseSlides: SlideData[], format: PostFormat): SlideData[] => {
+const normalizeSponsors = (value: unknown): Sponsor[] => {
+  if (!Array.isArray(value)) {
+    return getDefaultSponsors();
+  }
+
+  const sponsors = value
+    .map((item) => {
+      if (!isRecord(item)) {
+        return null;
+      }
+
+      if (typeof item.id !== "string" || typeof item.name !== "string" || typeof item.logoDataUrl !== "string") {
+        return null;
+      }
+
+      return {
+        id: item.id,
+        name: item.name,
+        logoDataUrl: item.logoDataUrl,
+      } satisfies Sponsor;
+    })
+    .filter(Boolean) as Sponsor[];
+
+  return sponsors.length > 0 ? sponsors : getDefaultSponsors();
+};
+
+const withClosingSlide = (baseSlides: TournamentSlideData[], format: PostFormat): SlideData[] => {
   if (baseSlides.length === 0) {
     return [];
   }
 
-  const slides = [...baseSlides];
+  const slides: SlideData[] = [...baseSlides];
   if (format === "posteo") {
     slides.push({
       slideIndex: slides.length,
@@ -53,7 +100,106 @@ const withClosingSlide = (baseSlides: SlideData[], format: PostFormat): SlideDat
   }));
 };
 
-const readCachedPostData = (): PostData | null => {
+const parseTournamentData = (value: unknown): TournamentPostData | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const generos = value.generos;
+  const format = value.format;
+  const fechaDesde = value.fechaDesde;
+  const fechaHasta = value.fechaHasta;
+  const days = value.days;
+
+  if (!Array.isArray(generos) || !generos.every((item) => typeof item === "string" && GENDER_VALUES.has(item))) {
+    return null;
+  }
+
+  if (typeof fechaDesde !== "string" || typeof fechaHasta !== "string") {
+    return null;
+  }
+
+  if (typeof format !== "undefined" && (typeof format !== "string" || !FORMAT_VALUES.has(format))) {
+    return null;
+  }
+
+  if (!Array.isArray(days)) {
+    return null;
+  }
+
+  for (const day of days) {
+    if (!isRecord(day) || typeof day.id !== "string" || typeof day.diaLabel !== "string" || !Array.isArray(day.items)) {
+      return null;
+    }
+
+    for (const item of day.items) {
+      if (
+        !isRecord(item) ||
+        typeof item.id !== "string" ||
+        typeof item.categoria !== "string" ||
+        typeof item.hora !== "string" ||
+        typeof item.lugar !== "string" ||
+        typeof item.estado !== "string" ||
+        !STATUS_VALUES.has(item.estado)
+      ) {
+        return null;
+      }
+    }
+  }
+
+  return {
+    postType: "torneos",
+    titulo: "TORNEOS AMERICANOS",
+    format: (format ?? "historia") as PostFormat,
+    generos,
+    fechaDesde,
+    fechaHasta,
+    days,
+    sponsors: normalizeSponsors(value.sponsors),
+  };
+};
+
+const parseLoosePlayerData = (value: unknown): LoosePlayerPost | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    typeof value.categoria !== "string" ||
+    typeof value.fecha !== "string" ||
+    typeof value.hora !== "string" ||
+    typeof value.sede !== "string"
+  ) {
+    return null;
+  }
+
+  if (typeof value.mano !== "undefined" && (typeof value.mano !== "string" || !HAND_VALUES.has(value.mano))) {
+    return null;
+  }
+
+  if (typeof value.subtitulo !== "undefined" && typeof value.subtitulo !== "string") {
+    return null;
+  }
+
+  return {
+    postType: "jugador_suelto",
+    titulo: "BUSCAMOS JUGADOR",
+    subtitulo: typeof value.subtitulo === "string" ? value.subtitulo : "TORNEO AMERICANO",
+    categoria: value.categoria,
+    fecha: value.fecha,
+    hora: value.hora,
+    sede: value.sede,
+    mano: value.mano as LoosePlayerPost["mano"],
+  };
+};
+
+const buildDefaultState = (): BuilderState => ({
+  activePostType: "torneos",
+  tournaments: defaultTournamentPostData(),
+  loosePlayer: defaultLoosePlayerPostData(),
+});
+
+const readCachedBuilderState = (): BuilderState | null => {
   if (typeof window === "undefined") {
     return null;
   }
@@ -69,55 +215,33 @@ const readCachedPostData = (): PostData | null => {
       return null;
     }
 
-    const generos = parsed.generos;
-    const format = parsed.format;
-    const fechaDesde = parsed.fechaDesde;
-    const fechaHasta = parsed.fechaHasta;
-    const days = parsed.days;
-
-    if (!Array.isArray(generos) || !generos.every((item) => typeof item === "string" && GENDER_VALUES.has(item))) {
-      return null;
+    // Backward compatibility with older cache containing only tournament data.
+    const oldTournament = parseTournamentData(parsed);
+    if (oldTournament) {
+      return {
+        activePostType: "torneos",
+        tournaments: oldTournament,
+        loosePlayer: defaultLoosePlayerPostData(),
+      };
     }
 
-    if (typeof fechaDesde !== "string" || typeof fechaHasta !== "string") {
+    const activePostType = parsed.activePostType;
+    const tournaments = parseTournamentData(parsed.tournaments);
+    const loosePlayer = parseLoosePlayerData(parsed.loosePlayer);
+
+    if (
+      typeof activePostType !== "string" ||
+      !POST_TYPE_VALUES.has(activePostType) ||
+      !tournaments ||
+      !loosePlayer
+    ) {
       return null;
-    }
-
-    if (typeof format !== "undefined" && (typeof format !== "string" || !FORMAT_VALUES.has(format))) {
-      return null;
-    }
-
-    if (!Array.isArray(days)) {
-      return null;
-    }
-
-    for (const day of days) {
-      if (!isRecord(day) || typeof day.id !== "string" || typeof day.diaLabel !== "string" || !Array.isArray(day.items)) {
-        return null;
-      }
-
-      for (const item of day.items) {
-        if (
-          !isRecord(item) ||
-          typeof item.id !== "string" ||
-          typeof item.categoria !== "string" ||
-          typeof item.hora !== "string" ||
-          typeof item.lugar !== "string" ||
-          typeof item.estado !== "string" ||
-          !STATUS_VALUES.has(item.estado)
-        ) {
-          return null;
-        }
-      }
     }
 
     return {
-      titulo: "TORNEOS AMERICANOS",
-      format: (format ?? "historia") as PostFormat,
-      generos,
-      fechaDesde,
-      fechaHasta,
-      days,
+      activePostType: activePostType as PostType,
+      tournaments,
+      loosePlayer,
     };
   } catch {
     return null;
@@ -125,10 +249,11 @@ const readCachedPostData = (): PostData | null => {
 };
 
 export function PostBuilder() {
-  const [data, setData] = useState<PostData>(() => defaultPostData());
+  const [state, setState] = useState<BuilderState>(() => buildDefaultState());
   const [cacheReady, setCacheReady] = useState(false);
-  const debouncedData = useDebouncedValue(data, 120);
-  const errors = useMemo(() => validatePostData(data), [data]);
+  const activeData = state.activePostType === "torneos" ? state.tournaments : state.loosePlayer;
+  const debouncedActiveData = useDebouncedValue(activeData, 120);
+  const errors = useMemo(() => validatePostData(activeData), [activeData]);
   const hasCriticalErrors = errors.length > 0;
 
   const [slides, setSlides] = useState<SlideData[]>([]);
@@ -147,9 +272,9 @@ export function PostBuilder() {
   const exportRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    const cachedData = readCachedPostData();
-    if (cachedData) {
-      setData(cachedData);
+    const cachedState = readCachedBuilderState();
+    if (cachedState) {
+      setState(cachedState);
     }
     setCacheReady(true);
   }, []);
@@ -159,8 +284,12 @@ export function PostBuilder() {
       return;
     }
 
-    window.localStorage.setItem(POST_CACHE_KEY, JSON.stringify(data));
-  }, [cacheReady, data]);
+    window.localStorage.setItem(POST_CACHE_KEY, JSON.stringify(state));
+  }, [cacheReady, state]);
+
+  useEffect(() => {
+    setCurrentSlide(0);
+  }, [state.activePostType]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -233,13 +362,35 @@ export function PostBuilder() {
     const version = computeVersionRef.current + 1;
     computeVersionRef.current = version;
 
+    if (debouncedActiveData.postType === "jugador_suelto") {
+      const looseSlide: LoosePlayerSlideData = {
+        slideIndex: 0,
+        totalSlides: 1,
+        type: "loose-player",
+        days: [],
+      };
+
+      setMeasureRequest(null);
+      const pending = pendingMeasureRef.current;
+      if (pending) {
+        pending.resolve(false);
+        pendingMeasureRef.current = null;
+      }
+
+      setSlides([looseSlide]);
+      setCurrentSlide(0);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const run = async () => {
-      const nextSlides = await computeSlides(debouncedData, (candidateDays) => measureCandidate(candidateDays, version));
+      const nextSlides = await computeSlides(debouncedActiveData, (candidateDays) => measureCandidate(candidateDays, version));
       if (cancelled || computeVersionRef.current !== version) {
         return;
       }
 
-      const nextSlidesWithClosing = withClosingSlide(nextSlides, debouncedData.format);
+      const nextSlidesWithClosing = withClosingSlide(nextSlides, debouncedActiveData.format);
       setSlides(nextSlidesWithClosing);
       setCurrentSlide((previous) => Math.min(previous, Math.max(nextSlidesWithClosing.length - 1, 0)));
     };
@@ -254,7 +405,7 @@ export function PostBuilder() {
         pendingMeasureRef.current = null;
       }
     };
-  }, [debouncedData, measureCandidate]);
+  }, [debouncedActiveData, measureCandidate]);
 
   const setExportRef = useCallback(
     (index: number) => (node: HTMLDivElement | null) => {
@@ -276,6 +427,9 @@ export function PostBuilder() {
     return node;
   }, []);
 
+  const exportFormat = activeData.postType === "torneos" ? activeData.format : "historia";
+  const filePrefix = activeData.postType === "torneos" ? "otp_torneos_americanos" : "otp_jugador_suelto";
+
   const onExportCurrent = useCallback(async () => {
     const activeSlide = slides[currentSlide];
     if (!activeSlide) {
@@ -289,11 +443,11 @@ export function PostBuilder() {
 
     setExportingCurrent(true);
     try {
-      await exportCurrentSlidePng(node, currentSlide, data.format);
+      await exportCurrentSlidePng(node, currentSlide, exportFormat, filePrefix);
     } finally {
       setExportingCurrent(false);
     }
-  }, [slides, currentSlide, data.format]);
+  }, [slides, currentSlide, exportFormat, filePrefix]);
 
   const onExportAll = useCallback(async () => {
     if (slides.length === 0) {
@@ -302,19 +456,40 @@ export function PostBuilder() {
 
     setExportingAll(true);
     try {
-      await exportAllSlidesZip(slides, getExportNode, data.format);
+      await exportAllSlidesZip(slides, getExportNode, exportFormat, filePrefix);
     } finally {
       setExportingAll(false);
     }
-  }, [slides, getExportNode, data.format]);
+  }, [slides, getExportNode, exportFormat, filePrefix]);
 
   const onResetAll = useCallback(() => {
-    setData(defaultPostData());
+    setState((previous) => {
+      if (previous.activePostType === "torneos") {
+        return {
+          ...previous,
+          tournaments: defaultTournamentPostData(),
+        };
+      }
+
+      return {
+        ...previous,
+        loosePlayer: defaultLoosePlayerPostData(),
+      };
+    });
     setCurrentSlide(0);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(POST_CACHE_KEY);
-    }
   }, []);
+
+  const updateTournamentData = useCallback((next: TournamentPostData) => {
+    setState((previous) => ({ ...previous, tournaments: next }));
+  }, []);
+
+  const updateLooseData = useCallback((next: LoosePlayerPost) => {
+    setState((previous) => ({ ...previous, loosePlayer: next }));
+  }, []);
+
+  const handlePostTypeChange = (postType: PostType) => {
+    setState((previous) => ({ ...previous, activePostType: postType }));
+  };
 
   const handleMobileTabChange = useCallback(
     (nextTab: MobileTab) => {
@@ -391,7 +566,40 @@ export function PostBuilder() {
 
       <div className="mx-auto grid w-full max-w-[1780px] gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[40%_60%]">
         <section className={`${mobileTab === "builder" ? "block" : "hidden"} otp-scrollbar lg:block lg:min-h-0 lg:overflow-y-auto lg:pr-2`}>
-          <BuilderForm data={data} onChange={setData} onReset={onResetAll} errors={errors} />
+          <section className="mb-5 rounded-2xl border border-white/15 bg-white/8 p-4 backdrop-blur-md">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => handlePostTypeChange("torneos")}
+                aria-pressed={state.activePostType === "torneos"}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  state.activePostType === "torneos"
+                    ? "border border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)]"
+                    : "border border-white/20 bg-white/5 text-white"
+                }`}
+              >
+                Torneos Americanos
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePostTypeChange("jugador_suelto")}
+                aria-pressed={state.activePostType === "jugador_suelto"}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  state.activePostType === "jugador_suelto"
+                    ? "border border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)]"
+                    : "border border-white/20 bg-white/5 text-white"
+                }`}
+              >
+                Jugador Suelto
+              </button>
+            </div>
+          </section>
+
+          {state.activePostType === "torneos" ? (
+            <BuilderForm data={state.tournaments} onChange={updateTournamentData} onReset={onResetAll} errors={errors} />
+          ) : (
+            <LoosePlayerBuilderForm data={state.loosePlayer} onChange={updateLooseData} onReset={onResetAll} errors={errors} />
+          )}
         </section>
 
         <section className={`${mobileTab === "preview" ? "flex" : "hidden"} otp-scrollbar flex-col gap-4 lg:flex lg:min-h-0 lg:overflow-y-auto lg:pl-2`}>
@@ -407,7 +615,7 @@ export function PostBuilder() {
             }}
           />
           <SlidesPreview
-            data={data}
+            data={activeData}
             slides={slides}
             currentSlide={currentSlide}
             onChangeSlide={setCurrentSlide}
@@ -416,16 +624,11 @@ export function PostBuilder() {
         </section>
       </div>
 
-      <SlideMeasurer data={debouncedData} request={measureRequest} onMeasured={handleMeasured} />
+      <SlideMeasurer data={state.tournaments} request={measureRequest} onMeasured={handleMeasured} />
 
       <div className="pointer-events-none fixed -left-[30000px] top-0 opacity-0" aria-hidden>
         {slides.map((slide) => (
-          <SlideRenderer
-            key={`export-${slide.slideIndex}`}
-            data={data}
-            slide={slide}
-            slideRef={setExportRef(slide.slideIndex)}
-          />
+          <SlideRenderer key={`export-${slide.slideIndex}`} data={activeData} slide={slide} slideRef={setExportRef(slide.slideIndex)} />
         ))}
       </div>
     </main>

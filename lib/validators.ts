@@ -1,6 +1,24 @@
-import type { PostData, ValidationError } from "@/lib/types";
+import type { LoosePlayerPost, PostData, TournamentPostData, ValidationError } from "@/lib/types";
 
-export const validatePostData = (data: PostData): ValidationError[] => {
+const validateSponsors = (errors: ValidationError[], sponsors: { logoDataUrl: string; name: string }[], pathPrefix: string) => {
+  sponsors.forEach((sponsor, index) => {
+    if (!sponsor.logoDataUrl.trim()) {
+      errors.push({
+        path: `${pathPrefix}.${index}.logoDataUrl`,
+        message: `Sponsor ${index + 1}: logo requerido.`,
+      });
+    }
+
+    if (!sponsor.name.trim()) {
+      errors.push({
+        path: `${pathPrefix}.${index}.name`,
+        message: `Sponsor ${index + 1}: nombre requerido.`,
+      });
+    }
+  });
+};
+
+const validateTournamentsData = (data: TournamentPostData): ValidationError[] => {
   const errors: ValidationError[] = [];
 
   if (data.generos.length === 0) {
@@ -48,5 +66,32 @@ export const validatePostData = (data: PostData): ValidationError[] => {
     });
   });
 
+  validateSponsors(errors, data.sponsors, "sponsors");
   return errors;
+};
+
+const validateLoosePlayerData = (data: LoosePlayerPost): ValidationError[] => {
+  const errors: ValidationError[] = [];
+
+  if (!data.categoria.trim()) {
+    errors.push({ path: "categoria", message: "La categoría es obligatoria." });
+  }
+  if (!data.fecha.trim()) {
+    errors.push({ path: "fecha", message: "La fecha es obligatoria." });
+  }
+  if (!data.hora.trim()) {
+    errors.push({ path: "hora", message: "La hora es obligatoria." });
+  }
+  if (!data.sede.trim()) {
+    errors.push({ path: "sede", message: "La sede es obligatoria." });
+  }
+  return errors;
+};
+
+export const validatePostData = (data: PostData): ValidationError[] => {
+  if (data.postType === "torneos") {
+    return validateTournamentsData(data);
+  }
+
+  return validateLoosePlayerData(data);
 };

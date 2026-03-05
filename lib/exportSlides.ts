@@ -45,20 +45,27 @@ const waitForNodeReady = async (node: HTMLElement): Promise<void> => {
   });
 };
 
-const makeSlideName = (index: number): string => `otp_americanosslide_${String(index + 1).padStart(2, "0")}.png`;
+const makeSlideName = (index: number, filePrefix: string): string =>
+  `${filePrefix}_${String(index + 1).padStart(2, "0")}.png`;
 
-export async function exportCurrentSlidePng(node: HTMLElement, index: number, format: PostFormat): Promise<void> {
+export async function exportCurrentSlidePng(
+  node: HTMLElement,
+  index: number,
+  format: PostFormat,
+  filePrefix = "otp_slide",
+): Promise<void> {
   await waitForNodeReady(node);
   const dataUrl = await toPng(node, buildCaptureConfig(format));
   const response = await fetch(dataUrl);
   const blob = await response.blob();
-  saveAs(blob, makeSlideName(index));
+  saveAs(blob, makeSlideName(index, filePrefix));
 }
 
 export async function exportAllSlidesZip(
   slides: SlideData[],
   renderForExport: (slide: SlideData) => Promise<HTMLElement>,
   format: PostFormat,
+  filePrefix = "otp_slide",
 ): Promise<void> {
   const zip = new JSZip();
   const captureConfig = buildCaptureConfig(format);
@@ -68,9 +75,9 @@ export async function exportAllSlidesZip(
     await waitForNodeReady(node);
     const dataUrl = await toPng(node, captureConfig);
     const base64 = dataUrl.split(",")[1];
-    zip.file(makeSlideName(slide.slideIndex), base64, { base64: true });
+    zip.file(makeSlideName(slide.slideIndex, filePrefix), base64, { base64: true });
   }
 
   const blob = await zip.generateAsync({ type: "blob" });
-  saveAs(blob, "otp_americanos_slides.zip");
+  saveAs(blob, `${filePrefix}.zip`);
 }

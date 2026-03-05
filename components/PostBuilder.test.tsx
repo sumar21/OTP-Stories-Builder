@@ -186,8 +186,23 @@ describe("PostBuilder", () => {
       const raw = window.localStorage.getItem(POST_CACHE_KEY);
       expect(raw).not.toBeNull();
       const parsed = JSON.parse(raw as string);
-      expect(parsed.fechaDesde).toBe("2026-04-12");
-      expect(parsed.format).toBe("historia");
+      expect(parsed.tournaments.fechaDesde).toBe("2026-04-12");
+      expect(parsed.tournaments.format).toBe("historia");
+    });
+  });
+
+  it("permite cambiar al modo Jugador Suelto y renderiza su formulario", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Jugador Suelto" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Categoría *")).toBeInTheDocument();
+      expect(screen.getByLabelText("Fecha *")).toBeInTheDocument();
+      expect(screen.getByLabelText("Hora *")).toBeInTheDocument();
+      expect(screen.getByLabelText("Sede *")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Género (opcional)")).not.toBeInTheDocument();
+      expect(screen.getByText(slidePattern(1, 1))).toBeInTheDocument();
     });
   });
 

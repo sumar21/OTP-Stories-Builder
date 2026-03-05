@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { SlideRenderer } from "@/components/SlideRenderer";
-import type { DaySlice, PostData, SlideData } from "@/lib/types";
+import type { DaySlice, TournamentPostData, TournamentSlideData } from "@/lib/types";
 
 export type SlideMeasureRequest = {
   id: number;
@@ -11,7 +11,7 @@ export type SlideMeasureRequest = {
 };
 
 type SlideMeasurerProps = {
-  data: PostData;
+  data: TournamentPostData;
   request: SlideMeasureRequest | null;
   onMeasured: (id: number, version: number, fits: boolean) => void;
 };
@@ -42,7 +42,7 @@ export function SlideMeasurer({ data, request, onMeasured }: SlideMeasurerProps)
     };
   }, [request, onMeasured]);
 
-  const measureSlide: SlideData = {
+  const measureSlide: TournamentSlideData = {
     slideIndex: 0,
     totalSlides: 1,
     type: "tournaments",

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { validatePostData } from "@/lib/validators";
-import type { PostData } from "@/lib/types";
+import type { TournamentPostData } from "@/lib/types";
 
-const makeData = (override?: Partial<PostData>): PostData => ({
+const makeData = (override?: Partial<TournamentPostData>): TournamentPostData => ({
+  postType: "torneos",
   titulo: "TORNEOS AMERICANOS",
   format: "historia",
   generos: ["Masculino"],
@@ -23,6 +24,7 @@ const makeData = (override?: Partial<PostData>): PostData => ({
       ],
     },
   ],
+  sponsors: [{ id: "s1", name: "Sponsor 1", logoDataUrl: "/sponsors/onfit.svg" }],
   ...override,
 });
 

@@ -5,12 +5,13 @@ import type { LucideIcon } from "lucide-react";
 import { Mars, Venus, VenusAndMars } from "lucide-react";
 import { nanoid } from "nanoid";
 import { DayEditor } from "@/components/DayEditor";
+import { SponsorsUploader } from "@/components/SponsorsUploader";
 import { CATEGORY_OPTIONS, getCategoryOptionsForGeneros, VENUE_OPTIONS } from "@/lib/tournamentOptions";
-import type { DayBlock, Gender, PostData, PostFormat, TournamentItem, ValidationError } from "@/lib/types";
+import type { DayBlock, Gender, PostFormat, TournamentItem, TournamentPostData, ValidationError } from "@/lib/types";
 
 type BuilderFormProps = {
-  data: PostData;
-  onChange: (next: PostData) => void;
+  data: TournamentPostData;
+  onChange: (next: TournamentPostData) => void;
   onReset: () => void;
   errors: ValidationError[];
 };
@@ -84,7 +85,7 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
   const categoryOptions = useMemo(() => getCategoryOptionsForGeneros(data.generos), [data.generos]);
   const defaultCategory = categoryOptions[0] ?? CATEGORY_OPTIONS[0];
 
-  const updateTopField = <K extends "fechaDesde" | "fechaHasta" | "format">(field: K, value: PostData[K]) => {
+  const updateTopField = <K extends "fechaDesde" | "fechaHasta" | "format">(field: K, value: TournamentPostData[K]) => {
     onChange({ ...data, [field]: value });
   };
 
@@ -304,6 +305,8 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
           ))}
         </div>
       </section>
+
+      <SponsorsUploader sponsors={data.sponsors} onChange={(sponsors) => onChange({ ...data, sponsors })} />
 
       {errors.length > 0 ? (
         <section className="rounded-2xl border border-red-300/50 bg-red-400/10 p-4 text-sm text-red-50">

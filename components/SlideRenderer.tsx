@@ -1,24 +1,24 @@
 import { CircleCheck, Hourglass, Lock } from "lucide-react";
 import clsx from "clsx";
 import type { CSSProperties, Ref } from "react";
+import { LoosePlayerSlideRenderer } from "@/components/LoosePlayerSlideRenderer";
+import { SponsorsFooter } from "@/components/SponsorsFooter";
 import { formatToDayMonth } from "@/lib/date";
-import { getSlideSize } from "@/lib/slideFormat";
-import type { DaySlice, Gender, PostData, SlideData, Status } from "@/lib/types";
+import { getPostFormat, getSlideSize } from "@/lib/slideFormat";
+import type { DaySlice, Gender, PostData, Status, TournamentPostData } from "@/lib/types";
 
 type SlideRendererProps = {
   data: PostData;
-  slide: SlideData;
+  slide: {
+    slideIndex: number;
+    totalSlides: number;
+    type: "tournaments" | "closing" | "loose-player";
+    days: DaySlice[];
+  };
   slideRef?: Ref<HTMLDivElement>;
   className?: string;
   style?: CSSProperties;
 };
-
-const fixedSponsors = [
-  { id: "snauwaert", name: "Snauwaert", src: "/sponsors/snauwaert.svg" },
-  { id: "sumar", name: "Sumar", src: "/sponsors/sumar.svg" },
-  { id: "onfit", name: "Onfit", src: "/sponsors/onfit.svg" },
-  { id: "fullsport", name: "Fullsport", src: "/sponsors/fullsport.svg" },
-];
 
 const statusConfig: Record<
   Status,
@@ -106,14 +106,8 @@ const ClosingSlide = () => (
 );
 
 export function SlideRenderer({ data, slide, slideRef, className, style }: SlideRendererProps) {
-  const dateFrom = formatToDayMonth(data.fechaDesde);
-  const dateTo = formatToDayMonth(data.fechaHasta);
-  const showStatus = data.format === "historia";
-  const showSponsorsFooter = data.format === "historia";
-  const slideSize = getSlideSize(data.format);
-  const generoLabel =
-    data.generos.length > 0 ? data.generos.map((item) => GENDER_BADGE_LABELS[item].toUpperCase()).join(" Y ") : "SIN GÉNERO";
-  const generoBadgeTextClass = generoLabel.length > 14 ? "text-[40px]" : "text-[56px]";
+  const postFormat = getPostFormat(data);
+  const slideSize = getSlideSize(postFormat);
 
   const mergedStyle: CSSProperties = {
     width: slideSize.width,
@@ -128,7 +122,7 @@ export function SlideRenderer({ data, slide, slideRef, className, style }: Slide
         className={clsx("slide-root", className)}
         style={mergedStyle}
         data-slide-root
-        data-format={data.format}
+        data-format={postFormat}
         data-slide-type="closing"
       >
         <ClosingSlide />
@@ -136,13 +130,43 @@ export function SlideRenderer({ data, slide, slideRef, className, style }: Slide
     );
   }
 
+  if (slide.type === "loose-player" && data.postType === "jugador_suelto") {
+    return (
+      <div
+        ref={slideRef}
+        className={clsx("slide-root", className)}
+        style={mergedStyle}
+        data-slide-root
+        data-format="historia"
+        data-slide-type="loose-player"
+      >
+        <LoosePlayerSlideRenderer data={data} />
+      </div>
+    );
+  }
+
+  if (data.postType !== "torneos") {
+    return null;
+  }
+
+  const tournamentData: TournamentPostData = data;
+  const dateFrom = formatToDayMonth(tournamentData.fechaDesde);
+  const dateTo = formatToDayMonth(tournamentData.fechaHasta);
+  const showStatus = tournamentData.format === "historia";
+  const showSponsorsFooter = tournamentData.format === "historia";
+  const generoLabel =
+    tournamentData.generos.length > 0
+      ? tournamentData.generos.map((item) => GENDER_BADGE_LABELS[item].toUpperCase()).join(" Y ")
+      : "SIN GÉNERO";
+  const generoBadgeTextClass = generoLabel.length > 14 ? "text-[40px]" : "text-[56px]";
+
   return (
     <div
       ref={slideRef}
       className={clsx("slide-root", className)}
       style={mergedStyle}
       data-slide-root
-      data-format={data.format}
+      data-format={tournamentData.format}
       data-slide-type="tournaments"
     >
       <header className="slide-header">
@@ -182,17 +206,7 @@ export function SlideRenderer({ data, slide, slideRef, className, style }: Slide
       </section>
 
       {showSponsorsFooter ? (
-        <footer className="slide-footer">
-          <p className="text-center text-[44px] leading-none font-semibold tracking-[0.34em] text-[#9cb1f0]">SPONSORS</p>
-
-          <div className="mt-8 grid grid-cols-4 items-end gap-5">
-            {fixedSponsors.map((sponsor) => (
-              <div key={sponsor.id} className="flex min-h-[80px] items-end justify-center">
-                <img src={sponsor.src} alt={sponsor.name} className="max-h-[64px] w-full object-contain" />
-              </div>
-            ))}
-          </div>
-        </footer>
+        <SponsorsFooter sponsors={tournamentData.sponsors} compact={tournamentData.format === "posteo"} />
       ) : null}
     </div>
   );

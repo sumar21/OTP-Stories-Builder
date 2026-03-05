@@ -1,8 +1,8 @@
-import type { DaySlice, PostData, SlideData } from "@/lib/types";
+import type { DaySlice, TournamentPostData, TournamentSlideData } from "@/lib/types";
 
 export type SlideMeasureFn = (candidateDays: DaySlice[]) => Promise<boolean>;
 
-const withTotals = (slides: DaySlice[][]): SlideData[] => {
+const withTotals = (slides: DaySlice[][]): TournamentSlideData[] => {
   const total = slides.length;
 
   return slides.map((days, index) => ({
@@ -13,7 +13,7 @@ const withTotals = (slides: DaySlice[][]): SlideData[] => {
   }));
 };
 
-export async function computeSlides(data: PostData, canFit: SlideMeasureFn): Promise<SlideData[]> {
+export async function computeSlides(data: TournamentPostData, canFit: SlideMeasureFn): Promise<TournamentSlideData[]> {
   const days = data.days;
   const slides: DaySlice[][] = [];
   let currentSlide: DaySlice[] = [];

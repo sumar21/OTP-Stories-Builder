@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeSlides } from "@/lib/computeSlides";
-import type { PostData, TournamentItem } from "@/lib/types";
+import type { TournamentItem, TournamentPostData } from "@/lib/types";
 
 const makeItem = (id: string): TournamentItem => ({
   id,
@@ -10,7 +10,8 @@ const makeItem = (id: string): TournamentItem => ({
   estado: "DISPONIBLE",
 });
 
-const makeData = (days: { id: string; label: string; count: number }[]): PostData => ({
+const makeData = (days: { id: string; label: string; count: number }[]): TournamentPostData => ({
+  postType: "torneos",
   titulo: "TORNEOS AMERICANOS",
   format: "historia",
   generos: ["Masculino"],
@@ -21,6 +22,7 @@ const makeData = (days: { id: string; label: string; count: number }[]): PostDat
     diaLabel: day.label,
     items: Array.from({ length: day.count }, (_, index) => makeItem(`${day.id}-${index}`)),
   })),
+  sponsors: [{ id: "s1", name: "Sponsor 1", logoDataUrl: "/sponsors/onfit.svg" }],
 });
 
 const makeCanFit = (capacity: number) => {

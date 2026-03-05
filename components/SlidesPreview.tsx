@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "@/components/SlideRenderer";
-import { getSlideSize } from "@/lib/slideFormat";
+import { getPostFormat, getSlideSize } from "@/lib/slideFormat";
 import type { PostData, SlideData } from "@/lib/types";
 
 type SlidesPreviewProps = {
@@ -53,7 +53,7 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
     };
   }, [resizeSignal]);
 
-  const slideSize = useMemo(() => getSlideSize(data.format), [data.format]);
+  const slideSize = useMemo(() => getSlideSize(getPostFormat(data)), [data]);
   const previewHeight = (previewWidth * slideSize.height) / slideSize.width;
   const scale = previewWidth / slideSize.width;
 
