@@ -131,13 +131,26 @@ describe("PostBuilder", () => {
     fireEvent.click(addDayButton);
 
     await waitFor(() => {
-      expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
+      expect(screen.getByText(slidePattern(1, 2))).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getAllByText("Siguiente")[0]);
 
     await waitFor(() => {
-      expect(screen.getByText(slidePattern(2, 3))).toBeInTheDocument();
+      expect(screen.getByText(slidePattern(2, 2))).toBeInTheDocument();
+    });
+  });
+
+  it("en formato posteo agrega slide final extra", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Posteo/i }));
+    const addDayButton = screen.getAllByText("+ Agregar día")[0];
+    fireEvent.click(addDayButton);
+    fireEvent.click(addDayButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
     });
   });
 

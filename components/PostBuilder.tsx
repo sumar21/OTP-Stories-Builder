@@ -24,23 +24,26 @@ type PendingMeasure = {
   version: number;
   resolve: (fits: boolean) => void;
 };
+type MobileTab = "builder" | "preview";
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
-const withClosingSlide = (baseSlides: SlideData[]): SlideData[] => {
+const withClosingSlide = (baseSlides: SlideData[], format: PostFormat): SlideData[] => {
   if (baseSlides.length === 0) {
     return [];
   }
 
   const slides = [...baseSlides];
-  slides.push({
-    slideIndex: slides.length,
-    totalSlides: slides.length + 1,
-    type: "closing",
-    days: [],
-  });
+  if (format === "posteo") {
+    slides.push({
+      slideIndex: slides.length,
+      totalSlides: slides.length + 1,
+      type: "closing",
+      days: [],
+    });
+  }
 
   const total = slides.length;
   return slides.map((slide, index) => ({
@@ -130,7 +133,9 @@ export function PostBuilder() {
 
   const [slides, setSlides] = useState<SlideData[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [mobileTab, setMobileTab] = useState<"builder" | "preview">("builder");
+  const [mobileTab, setMobileTab] = useState<MobileTab>("builder");
+  const [showFloatingMobileTabs, setShowFloatingMobileTabs] = useState(false);
+  const mobileTabScrollRef = useRef<Record<MobileTab, number>>({ builder: 0, preview: 0 });
 
   const [measureRequest, setMeasureRequest] = useState<SlideMeasureRequest | null>(null);
   const requestSeqRef = useRef(0);
@@ -156,6 +161,39 @@ export function PostBuilder() {
 
     window.localStorage.setItem(POST_CACHE_KEY, JSON.stringify(data));
   }, [cacheReady, data]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const visibilityThreshold = 140;
+    let isTicking = false;
+
+    const updateFloatingTabs = () => {
+      const shouldShow = window.scrollY > visibilityThreshold;
+      setShowFloatingMobileTabs((previous) => (previous === shouldShow ? previous : shouldShow));
+    };
+
+    const handleScroll = () => {
+      if (isTicking) {
+        return;
+      }
+
+      isTicking = true;
+      requestAnimationFrame(() => {
+        updateFloatingTabs();
+        isTicking = false;
+      });
+    };
+
+    updateFloatingTabs();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   const measureCandidate = useCallback((candidateDays: DaySlice[], version: number) => {
     return new Promise<boolean>((resolve) => {
@@ -201,7 +239,7 @@ export function PostBuilder() {
         return;
       }
 
-      const nextSlidesWithClosing = withClosingSlide(nextSlides);
+      const nextSlidesWithClosing = withClosingSlide(nextSlides, debouncedData.format);
       setSlides(nextSlidesWithClosing);
       setCurrentSlide((previous) => Math.min(previous, Math.max(nextSlidesWithClosing.length - 1, 0)));
     };
@@ -278,8 +316,29 @@ export function PostBuilder() {
     }
   }, []);
 
+  const handleMobileTabChange = useCallback(
+    (nextTab: MobileTab) => {
+      if (nextTab === mobileTab) {
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        mobileTabScrollRef.current[mobileTab] = window.scrollY;
+      }
+
+      setMobileTab(nextTab);
+
+      if (typeof window !== "undefined") {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, mobileTabScrollRef.current[nextTab] ?? 0);
+        });
+      }
+    },
+    [mobileTab],
+  );
+
   return (
-    <main className="min-h-screen px-4 py-4 md:px-6 md:py-6">
+    <main className="min-h-screen px-4 py-4 pb-24 md:px-6 md:py-6 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden lg:pb-6">
       <header className="mx-auto mb-4 flex w-full max-w-[1780px] items-center justify-between">
         <div className="flex items-center gap-3">
           <img src="/logos/otp-logo.svg" alt="OTP" className="h-12 w-12 rounded-full object-contain" />
@@ -293,26 +352,49 @@ export function PostBuilder() {
       <div className="mx-auto mb-4 flex max-w-[1780px] gap-2 rounded-xl border border-white/15 bg-white/8 p-1 lg:hidden">
         <button
           type="button"
-          onClick={() => setMobileTab("builder")}
+          onClick={() => handleMobileTabChange("builder")}
           className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${mobileTab === "builder" ? "bg-white/20" : "bg-transparent"}`}
         >
           Builder
         </button>
         <button
           type="button"
-          onClick={() => setMobileTab("preview")}
+          onClick={() => handleMobileTabChange("preview")}
           className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${mobileTab === "preview" ? "bg-white/20" : "bg-transparent"}`}
         >
           Preview
         </button>
       </div>
 
-      <div className="mx-auto grid max-w-[1780px] gap-4 lg:grid-cols-[40%_60%]">
-        <section className={`${mobileTab === "builder" ? "block" : "hidden"} lg:block`}>
+      <div
+        className={`pointer-events-none fixed inset-x-0 bottom-4 z-40 px-4 transition-all duration-300 ease-out lg:hidden ${
+          showFloatingMobileTabs ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+        }`}
+      >
+        <div className="pointer-events-auto mx-auto flex w-full max-w-[1780px] gap-2 rounded-xl border border-white/20 bg-[#092bb6]/90 p-1 shadow-[0_20px_45px_rgba(2,8,34,0.45)] backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => handleMobileTabChange("builder")}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${mobileTab === "builder" ? "bg-white/20" : "bg-transparent"}`}
+          >
+            Builder
+          </button>
+          <button
+            type="button"
+            onClick={() => handleMobileTabChange("preview")}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition ${mobileTab === "preview" ? "bg-white/20" : "bg-transparent"}`}
+          >
+            Preview
+          </button>
+        </div>
+      </div>
+
+      <div className="mx-auto grid w-full max-w-[1780px] gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[40%_60%]">
+        <section className={`${mobileTab === "builder" ? "block" : "hidden"} otp-scrollbar lg:block lg:min-h-0 lg:overflow-y-auto lg:pr-2`}>
           <BuilderForm data={data} onChange={setData} onReset={onResetAll} errors={errors} />
         </section>
 
-        <section className={`${mobileTab === "preview" ? "flex" : "hidden"} flex-col gap-4 lg:flex`}>
+        <section className={`${mobileTab === "preview" ? "flex" : "hidden"} otp-scrollbar flex-col gap-4 lg:flex lg:min-h-0 lg:overflow-y-auto lg:pl-2`}>
           <ExportButtons
             disabled={hasCriticalErrors || slides.length === 0}
             exportingCurrent={exportingCurrent}
