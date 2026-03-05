@@ -14,14 +14,88 @@ import type { DaySlice, PostData, SlideData } from "@/lib/types";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { validatePostData } from "@/lib/validators";
 
+const POST_CACHE_KEY = "otp-post-builder-data-v1";
+const GENDER_VALUES = new Set(["Masculino", "Femenino", "Mixto"]);
+const STATUS_VALUES = new Set(["DISPONIBLE", "ULTIMOS_CUPOS", "COMPLETO"]);
+
 type PendingMeasure = {
   id: number;
   version: number;
   resolve: (fits: boolean) => void;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const readCachedPostData = (): PostData | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const rawValue = window.localStorage.getItem(POST_CACHE_KEY);
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue) as unknown;
+    if (!isRecord(parsed)) {
+      return null;
+    }
+
+    const generos = parsed.generos;
+    const fechaDesde = parsed.fechaDesde;
+    const fechaHasta = parsed.fechaHasta;
+    const days = parsed.days;
+
+    if (!Array.isArray(generos) || !generos.every((item) => typeof item === "string" && GENDER_VALUES.has(item))) {
+      return null;
+    }
+
+    if (typeof fechaDesde !== "string" || typeof fechaHasta !== "string") {
+      return null;
+    }
+
+    if (!Array.isArray(days)) {
+      return null;
+    }
+
+    for (const day of days) {
+      if (!isRecord(day) || typeof day.id !== "string" || typeof day.diaLabel !== "string" || !Array.isArray(day.items)) {
+        return null;
+      }
+
+      for (const item of day.items) {
+        if (
+          !isRecord(item) ||
+          typeof item.id !== "string" ||
+          typeof item.categoria !== "string" ||
+          typeof item.hora !== "string" ||
+          typeof item.lugar !== "string" ||
+          typeof item.estado !== "string" ||
+          !STATUS_VALUES.has(item.estado)
+        ) {
+          return null;
+        }
+      }
+    }
+
+    return {
+      titulo: "TORNEOS AMERICANOS",
+      generos,
+      fechaDesde,
+      fechaHasta,
+      days,
+    };
+  } catch {
+    return null;
+  }
+};
+
 export function PostBuilder() {
   const [data, setData] = useState<PostData>(() => defaultPostData());
+  const [cacheReady, setCacheReady] = useState(false);
   const debouncedData = useDebouncedValue(data, 120);
   const errors = useMemo(() => validatePostData(data), [data]);
   const hasCriticalErrors = errors.length > 0;
@@ -38,6 +112,22 @@ export function PostBuilder() {
   const [exportingCurrent, setExportingCurrent] = useState(false);
   const [exportingAll, setExportingAll] = useState(false);
   const exportRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    const cachedData = readCachedPostData();
+    if (cachedData) {
+      setData(cachedData);
+    }
+    setCacheReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!cacheReady || typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(POST_CACHE_KEY, JSON.stringify(data));
+  }, [cacheReady, data]);
 
   const measureCandidate = useCallback((candidateDays: DaySlice[], version: number) => {
     return new Promise<boolean>((resolve) => {

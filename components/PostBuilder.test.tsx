@@ -58,10 +58,12 @@ vi.mock("@/lib/computeSlides", () => ({
 }));
 
 const slidePattern = (current: number, total: number): RegExp => new RegExp(`Slide\\s*${current}\\s*/\\s*${total}`);
+const POST_CACHE_KEY = "otp-post-builder-data-v1";
 
 describe("PostBuilder", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
   });
 
   afterEach(() => {
@@ -115,6 +117,40 @@ describe("PostBuilder", () => {
 
     await waitFor(() => {
       expect(screen.getByText(slidePattern(2, 2))).toBeInTheDocument();
+    });
+  });
+
+  it("persistencia: recupera datos guardados del navegador", async () => {
+    window.localStorage.setItem(
+      POST_CACHE_KEY,
+      JSON.stringify({
+        titulo: "TORNEOS AMERICANOS",
+        generos: ["Mixto"],
+        fechaDesde: "2026-03-01",
+        fechaHasta: "2026-03-07",
+        days: [],
+      }),
+    );
+
+    render(<PostBuilder />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Fecha desde")).toHaveValue("2026-03-01");
+      expect(screen.getByLabelText("Fecha hasta")).toHaveValue("2026-03-07");
+      expect(screen.getByRole("button", { name: "Mixto" })).toHaveAttribute("aria-pressed", "true");
+    });
+  });
+
+  it("persistencia: guarda cambios automáticamente en localStorage", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.change(screen.getByLabelText("Fecha desde"), { target: { value: "2026-04-12" } });
+
+    await waitFor(() => {
+      const raw = window.localStorage.getItem(POST_CACHE_KEY);
+      expect(raw).not.toBeNull();
+      const parsed = JSON.parse(raw as string);
+      expect(parsed.fechaDesde).toBe("2026-04-12");
     });
   });
 });
