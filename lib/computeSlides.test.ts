@@ -12,6 +12,7 @@ const makeItem = (id: string): TournamentItem => ({
 
 const makeData = (days: { id: string; label: string; count: number }[]): PostData => ({
   titulo: "TORNEOS AMERICANOS",
+  format: "historia",
   generos: ["Masculino"],
   fechaDesde: "02/03",
   fechaHasta: "08/03",
@@ -38,6 +39,7 @@ describe("computeSlides", () => {
 
     const slides = await computeSlides(data, makeCanFit(20));
     expect(slides).toHaveLength(1);
+    expect(slides[0].type).toBe("tournaments");
     expect(slides[0].days).toHaveLength(2);
   });
 

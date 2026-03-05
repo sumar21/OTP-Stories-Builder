@@ -45,6 +45,7 @@ export function SlideMeasurer({ data, request, onMeasured }: SlideMeasurerProps)
   const measureSlide: SlideData = {
     slideIndex: 0,
     totalSlides: 1,
+    type: "tournaments",
     days: request?.candidateDays ?? [],
   };
 

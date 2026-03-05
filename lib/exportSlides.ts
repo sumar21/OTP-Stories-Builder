@@ -1,15 +1,20 @@
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import { toPng } from "html-to-image";
-import type { SlideData } from "@/lib/types";
+import { getSlideSize } from "@/lib/slideFormat";
+import type { PostFormat, SlideData } from "@/lib/types";
 
-const captureConfig = {
-  cacheBust: true,
-  pixelRatio: 1,
-  width: 1080,
-  height: 1920,
-  canvasWidth: 1080,
-  canvasHeight: 1920,
+const buildCaptureConfig = (format: PostFormat) => {
+  const size = getSlideSize(format);
+
+  return {
+    cacheBust: true,
+    pixelRatio: 1,
+    width: size.width,
+    height: size.height,
+    canvasWidth: size.width,
+    canvasHeight: size.height,
+  };
 };
 
 const waitForImages = async (node: HTMLElement): Promise<void> => {
@@ -42,9 +47,9 @@ const waitForNodeReady = async (node: HTMLElement): Promise<void> => {
 
 const makeSlideName = (index: number): string => `otp_americanosslide_${String(index + 1).padStart(2, "0")}.png`;
 
-export async function exportCurrentSlidePng(node: HTMLElement, index: number): Promise<void> {
+export async function exportCurrentSlidePng(node: HTMLElement, index: number, format: PostFormat): Promise<void> {
   await waitForNodeReady(node);
-  const dataUrl = await toPng(node, captureConfig);
+  const dataUrl = await toPng(node, buildCaptureConfig(format));
   const response = await fetch(dataUrl);
   const blob = await response.blob();
   saveAs(blob, makeSlideName(index));
@@ -53,8 +58,10 @@ export async function exportCurrentSlidePng(node: HTMLElement, index: number): P
 export async function exportAllSlidesZip(
   slides: SlideData[],
   renderForExport: (slide: SlideData) => Promise<HTMLElement>,
+  format: PostFormat,
 ): Promise<void> {
   const zip = new JSZip();
+  const captureConfig = buildCaptureConfig(format);
 
   for (const slide of slides) {
     const node = await renderForExport(slide);

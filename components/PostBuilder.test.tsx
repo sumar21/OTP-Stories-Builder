@@ -1,5 +1,5 @@
 import React from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PostBuilder } from "@/components/PostBuilder";
 
@@ -38,13 +38,14 @@ vi.mock("@/lib/exportSlides", () => ({
 vi.mock("@/lib/computeSlides", () => ({
   computeSlides: vi.fn(async (data: any) => {
     if (!data.days.length) {
-      return [{ slideIndex: 0, totalSlides: 1, days: [] }];
+      return [{ slideIndex: 0, totalSlides: 1, type: "tournaments", days: [] }];
     }
 
     const total = data.days.length;
     return data.days.map((day: any, idx: number) => ({
       slideIndex: idx,
       totalSlides: total,
+      type: "tournaments",
       days: [
         {
           dayId: day.id,
@@ -75,9 +76,11 @@ describe("PostBuilder", () => {
 
     expect(screen.getByLabelText("Fecha desde")).toHaveValue("");
     expect(screen.getByLabelText("Fecha hasta")).toHaveValue("");
-    expect(screen.getByRole("button", { name: "Masculino" })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("button", { name: "Femenino" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Caballeros" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Damas" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "Mixto" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: /Historia/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Posteo/i })).toHaveAttribute("aria-pressed", "false");
     expect(screen.queryByText("Día 1")).not.toBeInTheDocument();
   });
 
@@ -102,6 +105,24 @@ describe("PostBuilder", () => {
     });
   });
 
+  it("filtra categorías según el género seleccionado", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+
+    const categoriaSelect = (await screen.findByLabelText("Categoría")) as HTMLSelectElement;
+    expect(categoriaSelect).toHaveValue("C3");
+
+    fireEvent.click(screen.getByRole("button", { name: "Damas" }));
+
+    await waitFor(() => {
+      expect(categoriaSelect).toHaveValue("D4");
+    });
+
+    const options = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
+    expect(options).toEqual(["D4", "D4/D5", "D6/D7/D8", "D8"]);
+  });
+
   it("paginación cambia slide cuando hay dos días", async () => {
     render(<PostBuilder />);
 
@@ -110,13 +131,13 @@ describe("PostBuilder", () => {
     fireEvent.click(addDayButton);
 
     await waitFor(() => {
-      expect(screen.getByText(slidePattern(1, 2))).toBeInTheDocument();
+      expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getAllByText("Siguiente")[0]);
 
     await waitFor(() => {
-      expect(screen.getByText(slidePattern(2, 2))).toBeInTheDocument();
+      expect(screen.getByText(slidePattern(2, 3))).toBeInTheDocument();
     });
   });
 
@@ -125,6 +146,7 @@ describe("PostBuilder", () => {
       POST_CACHE_KEY,
       JSON.stringify({
         titulo: "TORNEOS AMERICANOS",
+        format: "posteo",
         generos: ["Mixto"],
         fechaDesde: "2026-03-01",
         fechaHasta: "2026-03-07",
@@ -138,6 +160,7 @@ describe("PostBuilder", () => {
       expect(screen.getByLabelText("Fecha desde")).toHaveValue("2026-03-01");
       expect(screen.getByLabelText("Fecha hasta")).toHaveValue("2026-03-07");
       expect(screen.getByRole("button", { name: "Mixto" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: /Posteo/i })).toHaveAttribute("aria-pressed", "true");
     });
   });
 
@@ -151,6 +174,30 @@ describe("PostBuilder", () => {
       expect(raw).not.toBeNull();
       const parsed = JSON.parse(raw as string);
       expect(parsed.fechaDesde).toBe("2026-04-12");
+      expect(parsed.format).toBe("historia");
+    });
+  });
+
+  it("restablecer todo limpia datos y vuelve al estado inicial", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Mixto" }));
+    fireEvent.change(screen.getByLabelText("Fecha desde"), { target: { value: "2026-04-12" } });
+    fireEvent.change(screen.getByLabelText("Fecha hasta"), { target: { value: "2026-04-18" } });
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Día 1")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Restablecer todo" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Fecha desde")).toHaveValue("");
+      expect(screen.getByLabelText("Fecha hasta")).toHaveValue("");
+      expect(screen.getByRole("button", { name: "Mixto" })).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByRole("button", { name: /Historia/i })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.queryByText("Día 1")).not.toBeInTheDocument();
     });
   });
 });

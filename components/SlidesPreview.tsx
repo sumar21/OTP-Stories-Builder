@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "@/components/SlideRenderer";
+import { getSlideSize } from "@/lib/slideFormat";
 import type { PostData, SlideData } from "@/lib/types";
 
 type SlidesPreviewProps = {
@@ -12,8 +13,6 @@ type SlidesPreviewProps = {
   resizeSignal?: string;
 };
 
-const SLIDE_WIDTH = 1080;
-const SLIDE_HEIGHT = 1920;
 const PREVIEW_TARGET_WIDTH = 395;
 const PREVIEW_TARGET_WIDTH_MOBILE = 320;
 const PREVIEW_FRAME_PADDING = 12;
@@ -54,8 +53,9 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
     };
   }, [resizeSignal]);
 
-  const scale = previewWidth / SLIDE_WIDTH;
-  const previewHeight = (previewWidth * SLIDE_HEIGHT) / SLIDE_WIDTH;
+  const slideSize = useMemo(() => getSlideSize(data.format), [data.format]);
+  const previewHeight = (previewWidth * slideSize.height) / slideSize.width;
+  const scale = previewWidth / slideSize.width;
 
   const activeSlide = useMemo(() => slides[currentSlide] ?? slides[0], [slides, currentSlide]);
 
@@ -74,7 +74,7 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
           type="button"
           onClick={() => onChangeSlide(Math.max(currentSlide - 1, 0))}
           disabled={currentSlide === 0}
-          className="justify-self-start rounded-lg border border-white/15 px-2 py-1 text-[11px] sm:px-3 sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
+          className="justify-self-start rounded-lg border border-white/15 px-2 py-1 text-[11px] font-semibold sm:px-3 sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
         >
           <span className="sm:hidden">Ant.</span>
           <span className="hidden sm:inline">Anterior</span>
@@ -86,7 +86,7 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
           type="button"
           onClick={() => onChangeSlide(Math.min(currentSlide + 1, slides.length - 1))}
           disabled={currentSlide === slides.length - 1}
-          className="justify-self-end rounded-lg border border-white/15 px-2 py-1 text-[11px] sm:px-3 sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
+          className="justify-self-end rounded-lg border border-white/15 px-2 py-1 text-[11px] font-semibold sm:px-3 sm:text-xs disabled:cursor-not-allowed disabled:opacity-40"
         >
           <span className="sm:hidden">Sig.</span>
           <span className="hidden sm:inline">Siguiente</span>
@@ -102,8 +102,8 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
             <div
               className="absolute left-0 top-0"
               style={{
-                width: SLIDE_WIDTH,
-                height: SLIDE_HEIGHT,
+                width: slideSize.width,
+                height: slideSize.height,
                 transform: `scale(${scale})`,
                 transformOrigin: "top left",
               }}

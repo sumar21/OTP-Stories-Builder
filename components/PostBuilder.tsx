@@ -10,13 +10,14 @@ import { SlidesPreview } from "@/components/SlidesPreview";
 import { computeSlides } from "@/lib/computeSlides";
 import { defaultPostData } from "@/lib/defaultPostData";
 import { exportAllSlidesZip, exportCurrentSlidePng } from "@/lib/exportSlides";
-import type { DaySlice, PostData, SlideData } from "@/lib/types";
+import type { DaySlice, PostData, PostFormat, SlideData } from "@/lib/types";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { validatePostData } from "@/lib/validators";
 
 const POST_CACHE_KEY = "otp-post-builder-data-v1";
 const GENDER_VALUES = new Set(["Masculino", "Femenino", "Mixto"]);
 const STATUS_VALUES = new Set(["DISPONIBLE", "ULTIMOS_CUPOS", "COMPLETO"]);
+const FORMAT_VALUES = new Set(["historia", "posteo"]);
 
 type PendingMeasure = {
   id: number;
@@ -26,6 +27,27 @@ type PendingMeasure = {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
+};
+
+const withClosingSlide = (baseSlides: SlideData[]): SlideData[] => {
+  if (baseSlides.length === 0) {
+    return [];
+  }
+
+  const slides = [...baseSlides];
+  slides.push({
+    slideIndex: slides.length,
+    totalSlides: slides.length + 1,
+    type: "closing",
+    days: [],
+  });
+
+  const total = slides.length;
+  return slides.map((slide, index) => ({
+    ...slide,
+    slideIndex: index,
+    totalSlides: total,
+  }));
 };
 
 const readCachedPostData = (): PostData | null => {
@@ -45,6 +67,7 @@ const readCachedPostData = (): PostData | null => {
     }
 
     const generos = parsed.generos;
+    const format = parsed.format;
     const fechaDesde = parsed.fechaDesde;
     const fechaHasta = parsed.fechaHasta;
     const days = parsed.days;
@@ -54,6 +77,10 @@ const readCachedPostData = (): PostData | null => {
     }
 
     if (typeof fechaDesde !== "string" || typeof fechaHasta !== "string") {
+      return null;
+    }
+
+    if (typeof format !== "undefined" && (typeof format !== "string" || !FORMAT_VALUES.has(format))) {
       return null;
     }
 
@@ -83,6 +110,7 @@ const readCachedPostData = (): PostData | null => {
 
     return {
       titulo: "TORNEOS AMERICANOS",
+      format: (format ?? "historia") as PostFormat,
       generos,
       fechaDesde,
       fechaHasta,
@@ -173,8 +201,9 @@ export function PostBuilder() {
         return;
       }
 
-      setSlides(nextSlides);
-      setCurrentSlide((previous) => Math.min(previous, Math.max(nextSlides.length - 1, 0)));
+      const nextSlidesWithClosing = withClosingSlide(nextSlides);
+      setSlides(nextSlidesWithClosing);
+      setCurrentSlide((previous) => Math.min(previous, Math.max(nextSlidesWithClosing.length - 1, 0)));
     };
 
     void run();
@@ -222,11 +251,11 @@ export function PostBuilder() {
 
     setExportingCurrent(true);
     try {
-      await exportCurrentSlidePng(node, currentSlide);
+      await exportCurrentSlidePng(node, currentSlide, data.format);
     } finally {
       setExportingCurrent(false);
     }
-  }, [slides, currentSlide]);
+  }, [slides, currentSlide, data.format]);
 
   const onExportAll = useCallback(async () => {
     if (slides.length === 0) {
@@ -235,11 +264,19 @@ export function PostBuilder() {
 
     setExportingAll(true);
     try {
-      await exportAllSlidesZip(slides, getExportNode);
+      await exportAllSlidesZip(slides, getExportNode, data.format);
     } finally {
       setExportingAll(false);
     }
-  }, [slides, getExportNode]);
+  }, [slides, getExportNode, data.format]);
+
+  const onResetAll = useCallback(() => {
+    setData(defaultPostData());
+    setCurrentSlide(0);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(POST_CACHE_KEY);
+    }
+  }, []);
 
   return (
     <main className="min-h-screen px-4 py-4 md:px-6 md:py-6">
@@ -248,7 +285,7 @@ export function PostBuilder() {
           <img src="/logos/otp-logo.svg" alt="OTP" className="h-12 w-12 rounded-full object-contain" />
           <div>
             <p className="text-xs tracking-[0.24em] text-white/70">OTP CREATOR</p>
-            <h1 className="text-xl font-semibold">Stories Builder</h1>
+            <h1 className="text-xl font-semibold">Instagram Builder</h1>
           </div>
         </div>
       </header>
@@ -257,14 +294,14 @@ export function PostBuilder() {
         <button
           type="button"
           onClick={() => setMobileTab("builder")}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm ${mobileTab === "builder" ? "bg-white/20" : "bg-transparent"}`}
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${mobileTab === "builder" ? "bg-white/20" : "bg-transparent"}`}
         >
           Builder
         </button>
         <button
           type="button"
           onClick={() => setMobileTab("preview")}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm ${mobileTab === "preview" ? "bg-white/20" : "bg-transparent"}`}
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${mobileTab === "preview" ? "bg-white/20" : "bg-transparent"}`}
         >
           Preview
         </button>
@@ -272,7 +309,7 @@ export function PostBuilder() {
 
       <div className="mx-auto grid max-w-[1780px] gap-4 lg:grid-cols-[40%_60%]">
         <section className={`${mobileTab === "builder" ? "block" : "hidden"} lg:block`}>
-          <BuilderForm data={data} onChange={setData} errors={errors} />
+          <BuilderForm data={data} onChange={setData} onReset={onResetAll} errors={errors} />
         </section>
 
         <section className={`${mobileTab === "preview" ? "flex" : "hidden"} flex-col gap-4 lg:flex`}>

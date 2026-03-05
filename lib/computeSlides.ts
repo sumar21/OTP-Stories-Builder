@@ -3,12 +3,12 @@ import type { DaySlice, PostData, SlideData } from "@/lib/types";
 export type SlideMeasureFn = (candidateDays: DaySlice[]) => Promise<boolean>;
 
 const withTotals = (slides: DaySlice[][]): SlideData[] => {
-  const normalized = slides.length > 0 ? slides : [[]];
-  const total = normalized.length;
+  const total = slides.length;
 
-  return normalized.map((days, index) => ({
+  return slides.map((days, index) => ({
     slideIndex: index,
     totalSlides: total,
+    type: "tournaments",
     days,
   }));
 };

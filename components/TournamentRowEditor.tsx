@@ -1,10 +1,12 @@
 import type { TournamentItem } from "@/lib/types";
-import { CATEGORY_OPTIONS, VENUE_OPTIONS } from "@/lib/tournamentOptions";
+import { VENUE_OPTIONS } from "@/lib/tournamentOptions";
 
 type TournamentRowEditorProps = {
   item: TournamentItem;
   itemIndex: number;
   totalItems: number;
+  showStatus: boolean;
+  categoryOptions: string[];
   onChange: (patch: Partial<TournamentItem>) => void;
   onRemove: () => void;
   onMoveUp: () => void;
@@ -15,6 +17,8 @@ export function TournamentRowEditor({
   item,
   itemIndex,
   totalItems,
+  showStatus,
+  categoryOptions,
   onChange,
   onRemove,
   onMoveUp,
@@ -30,7 +34,7 @@ export function TournamentRowEditor({
             onChange={(event) => onChange({ categoria: event.target.value })}
             className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)]"
           >
-            {CATEGORY_OPTIONS.map((categoria) => (
+            {categoryOptions.map((categoria) => (
               <option key={categoria} value={categoria} className="text-black">
                 {categoria}
               </option>
@@ -66,31 +70,35 @@ export function TournamentRowEditor({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex flex-col gap-1 text-xs font-medium text-white/80">
-          Estado
-          <select
-            value={item.estado}
-            onChange={(event) => onChange({ estado: event.target.value as TournamentItem["estado"] })}
-            className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)]"
-          >
-            <option value="DISPONIBLE" className="text-black">
-              DISPONIBLE
-            </option>
-            <option value="ULTIMOS_CUPOS" className="text-black">
-              ÚLTIMOS CUPOS
-            </option>
-            <option value="COMPLETO" className="text-black">
-              COMPLETO
-            </option>
-          </select>
-        </label>
+        {showStatus ? (
+          <label className="flex flex-col gap-1 text-xs font-medium text-white/80">
+            Estado
+            <select
+              value={item.estado}
+              onChange={(event) => onChange({ estado: event.target.value as TournamentItem["estado"] })}
+              className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)]"
+            >
+              <option value="DISPONIBLE" className="text-black">
+                DISPONIBLE
+              </option>
+              <option value="ULTIMOS_CUPOS" className="text-black">
+                ÚLTIMOS CUPOS
+              </option>
+              <option value="COMPLETO" className="text-black">
+                COMPLETO
+              </option>
+            </select>
+          </label>
+        ) : (
+          <p className="text-xs font-medium text-white/55">Modo posteo: sin estado visible.</p>
+        )}
 
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onMoveUp}
             disabled={itemIndex === 0}
-            className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             Subir
           </button>
@@ -98,7 +106,7 @@ export function TournamentRowEditor({
             type="button"
             onClick={onMoveDown}
             disabled={itemIndex === totalItems - 1}
-            className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             Bajar
           </button>

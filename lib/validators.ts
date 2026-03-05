@@ -7,11 +7,22 @@ export const validatePostData = (data: PostData): ValidationError[] => {
     errors.push({ path: "generos", message: "Seleccioná al menos un género." });
   }
 
+  if (data.days.length === 0) {
+    errors.push({ path: "days", message: "Agregá al menos un día." });
+  }
+
   data.days.forEach((day, dayIndex) => {
     if (!day.diaLabel.trim()) {
       errors.push({
         path: `days.${dayIndex}.diaLabel`,
         message: `El día ${dayIndex + 1} debe tener nombre.`,
+      });
+    }
+
+    if (day.items.length === 0) {
+      errors.push({
+        path: `days.${dayIndex}.items`,
+        message: `El día ${dayIndex + 1} debe tener al menos un torneo.`,
       });
     }
 

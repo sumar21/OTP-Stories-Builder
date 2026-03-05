@@ -1,5 +1,6 @@
 export type Gender = "Masculino" | "Femenino" | "Mixto";
 export type Status = "DISPONIBLE" | "ULTIMOS_CUPOS" | "COMPLETO";
+export type PostFormat = "historia" | "posteo";
 
 export type TournamentItem = {
   id: string;
@@ -17,6 +18,7 @@ export type DayBlock = {
 
 export type PostData = {
   titulo: "TORNEOS AMERICANOS";
+  format: PostFormat;
   generos: Gender[];
   fechaDesde: string;
   fechaHasta: string;
@@ -33,6 +35,7 @@ export type DaySlice = {
 export type SlideData = {
   slideIndex: number;
   totalSlides: number;
+  type: "tournaments" | "closing";
   days: DaySlice[];
 };
 

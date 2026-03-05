@@ -2,7 +2,8 @@ import { CircleCheck, Hourglass, Lock } from "lucide-react";
 import clsx from "clsx";
 import type { CSSProperties, Ref } from "react";
 import { formatToDayMonth } from "@/lib/date";
-import type { DaySlice, PostData, SlideData, Status } from "@/lib/types";
+import { getSlideSize } from "@/lib/slideFormat";
+import type { DaySlice, Gender, PostData, SlideData, Status } from "@/lib/types";
 
 type SlideRendererProps = {
   data: PostData;
@@ -44,7 +45,13 @@ const statusConfig: Record<
   },
 };
 
-const DayCard = ({ day }: { day: DaySlice }) => (
+const GENDER_BADGE_LABELS: Record<Gender, string> = {
+  Masculino: "Caballeros",
+  Femenino: "Damas",
+  Mixto: "Mixto",
+};
+
+const DayCard = ({ day, showStatus }: { day: DaySlice; showStatus: boolean }) => (
   <article className="rounded-[46px] border border-[#2f53cb] bg-[var(--otp-card)] px-8 py-7">
     <h3 className="mb-4 flex items-center gap-2 text-[54px] leading-[1] font-bold tracking-tight text-[#f2f4ff]">
       <span>{day.diaLabel}</span>
@@ -57,22 +64,27 @@ const DayCard = ({ day }: { day: DaySlice }) => (
         const Icon = config.icon;
 
         return (
-          <div key={item.id} className="flex h-[86px] items-center justify-between gap-3">
+          <div
+            key={item.id}
+            className={clsx("flex h-[86px] items-center gap-3", showStatus ? "justify-between" : "justify-start")}
+          >
             <div className="flex min-w-0 items-baseline gap-2 leading-none">
               <span className="text-[42px] font-bold text-[var(--otp-lime)]">{item.categoria}</span>
               <span className="text-[42px] font-medium text-[#f3f5ff]">{item.hora}</span>
               <span className="otp-text-clamp-1 text-[42px] font-semibold text-[var(--otp-text-muted)]">{item.lugar}</span>
             </div>
 
-            <span
-              className={clsx(
-                "inline-flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[31px] leading-none font-bold",
-                config.className,
-              )}
-            >
-              <Icon className="size-[26px]" strokeWidth={2.2} />
-              {config.label}
-            </span>
+            {showStatus ? (
+              <span
+                className={clsx(
+                  "inline-flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[31px] leading-none font-bold",
+                  config.className,
+                )}
+              >
+                <Icon className="size-[26px]" strokeWidth={2.2} />
+                {config.label}
+              </span>
+            ) : null}
           </div>
         );
       })}
@@ -80,14 +92,59 @@ const DayCard = ({ day }: { day: DaySlice }) => (
   </article>
 );
 
+const ClosingSlide = () => (
+  <div className="relative size-full overflow-hidden bg-[var(--otp-blue)]">
+    <img
+      src="/imagen-final.jpg"
+      alt="Sponsors OTP"
+      className="h-full w-full object-cover"
+      loading="eager"
+      decoding="sync"
+      draggable={false}
+    />
+  </div>
+);
+
 export function SlideRenderer({ data, slide, slideRef, className, style }: SlideRendererProps) {
   const dateFrom = formatToDayMonth(data.fechaDesde);
   const dateTo = formatToDayMonth(data.fechaHasta);
-  const generoLabel = data.generos.length > 0 ? data.generos.map((item) => item.toUpperCase()).join(" Y ") : "SIN GÉNERO";
+  const showStatus = data.format === "historia";
+  const showSponsorsFooter = data.format === "historia";
+  const slideSize = getSlideSize(data.format);
+  const generoLabel =
+    data.generos.length > 0 ? data.generos.map((item) => GENDER_BADGE_LABELS[item].toUpperCase()).join(" Y ") : "SIN GÉNERO";
   const generoBadgeTextClass = generoLabel.length > 14 ? "text-[40px]" : "text-[56px]";
 
+  const mergedStyle: CSSProperties = {
+    width: slideSize.width,
+    height: slideSize.height,
+    ...style,
+  };
+
+  if (slide.type === "closing") {
+    return (
+      <div
+        ref={slideRef}
+        className={clsx("slide-root", className)}
+        style={mergedStyle}
+        data-slide-root
+        data-format={data.format}
+        data-slide-type="closing"
+      >
+        <ClosingSlide />
+      </div>
+    );
+  }
+
   return (
-    <div ref={slideRef} className={clsx("slide-root", className)} style={style} data-slide-root>
+    <div
+      ref={slideRef}
+      className={clsx("slide-root", className)}
+      style={mergedStyle}
+      data-slide-root
+      data-format={data.format}
+      data-slide-type="tournaments"
+    >
       <header className="slide-header">
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0 flex-1">
@@ -118,23 +175,25 @@ export function SlideRenderer({ data, slide, slideRef, className, style }: Slide
         <div className="slide-day-scroll-area" data-variable-area>
           <div className="slide-day-list" data-day-cards>
             {slide.days.map((day, index) => (
-              <DayCard key={`${day.dayId}-${index}-${day.continuation ? "cont" : "full"}`} day={day} />
+              <DayCard key={`${day.dayId}-${index}-${day.continuation ? "cont" : "full"}`} day={day} showStatus={showStatus} />
             ))}
           </div>
         </div>
       </section>
 
-      <footer className="slide-footer">
-        <p className="text-center text-[44px] leading-none font-semibold tracking-[0.34em] text-[#9cb1f0]">SPONSORS</p>
+      {showSponsorsFooter ? (
+        <footer className="slide-footer">
+          <p className="text-center text-[44px] leading-none font-semibold tracking-[0.34em] text-[#9cb1f0]">SPONSORS</p>
 
-        <div className="mt-8 grid grid-cols-4 items-end gap-5">
-          {fixedSponsors.map((sponsor) => (
-            <div key={sponsor.id} className="flex min-h-[80px] items-end justify-center">
-              <img src={sponsor.src} alt={sponsor.name} className="max-h-[64px] w-full object-contain" />
-            </div>
-          ))}
-        </div>
-      </footer>
+          <div className="mt-8 grid grid-cols-4 items-end gap-5">
+            {fixedSponsors.map((sponsor) => (
+              <div key={sponsor.id} className="flex min-h-[80px] items-end justify-center">
+                <img src={sponsor.src} alt={sponsor.name} className="max-h-[64px] w-full object-contain" />
+              </div>
+            ))}
+          </div>
+        </footer>
+      ) : null}
     </div>
   );
 }

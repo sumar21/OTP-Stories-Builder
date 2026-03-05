@@ -1,36 +1,43 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Mars, Venus, VenusAndMars } from "lucide-react";
 import { nanoid } from "nanoid";
 import { DayEditor } from "@/components/DayEditor";
-import { CATEGORY_OPTIONS, VENUE_OPTIONS } from "@/lib/tournamentOptions";
-import type { DayBlock, Gender, PostData, TournamentItem, ValidationError } from "@/lib/types";
+import { CATEGORY_OPTIONS, getCategoryOptionsForGeneros, VENUE_OPTIONS } from "@/lib/tournamentOptions";
+import type { DayBlock, Gender, PostData, PostFormat, TournamentItem, ValidationError } from "@/lib/types";
 
 type BuilderFormProps = {
   data: PostData;
   onChange: (next: PostData) => void;
+  onReset: () => void;
   errors: ValidationError[];
 };
 
-const buildEmptyTournament = (): TournamentItem => ({
+const buildEmptyTournament = (defaultCategory: string): TournamentItem => ({
   id: nanoid(),
-  categoria: CATEGORY_OPTIONS[0],
+  categoria: defaultCategory,
   hora: "13:00",
   lugar: VENUE_OPTIONS[0],
   estado: "DISPONIBLE",
 });
 
-const buildEmptyDay = (): DayBlock => ({
+const buildEmptyDay = (defaultCategory: string): DayBlock => ({
   id: nanoid(),
   diaLabel: "",
-  items: [buildEmptyTournament()],
+  items: [buildEmptyTournament(defaultCategory)],
 });
 
-const GENERO_OPTIONS: { label: Gender; Icon: LucideIcon }[] = [
-  { label: "Masculino", Icon: Mars },
-  { label: "Femenino", Icon: Venus },
-  { label: "Mixto", Icon: VenusAndMars },
+const GENERO_OPTIONS: { value: Gender; label: string; Icon: LucideIcon }[] = [
+  { value: "Masculino", label: "Caballeros", Icon: Mars },
+  { value: "Femenino", label: "Damas", Icon: Venus },
+  { value: "Mixto", label: "Mixto", Icon: VenusAndMars },
+];
+
+const FORMAT_OPTIONS: { value: PostFormat; label: string; description: string }[] = [
+  { value: "historia", label: "Historia", description: "1080x1920" },
+  { value: "posteo", label: "Posteo", description: "1080x1350" },
 ];
 
 const reorder = <T,>(list: T[], from: number, to: number): T[] => {
@@ -40,22 +47,78 @@ const reorder = <T,>(list: T[], from: number, to: number): T[] => {
   return copy;
 };
 
-export function BuilderForm({ data, onChange, errors }: BuilderFormProps) {
-  const updateTopField = (field: "fechaDesde" | "fechaHasta", value: string) => {
+const normalizeTournamentCategories = (
+  days: DayBlock[],
+  categoryOptions: string[],
+  fallbackCategory: string,
+): DayBlock[] => {
+  const allowedCategories = new Set(categoryOptions);
+  let hasChanges = false;
+
+  const nextDays = days.map((day) => {
+    let dayChanged = false;
+    const nextItems = day.items.map((item) => {
+      if (allowedCategories.has(item.categoria)) {
+        return item;
+      }
+
+      dayChanged = true;
+      hasChanges = true;
+      return { ...item, categoria: fallbackCategory };
+    });
+
+    if (!dayChanged) {
+      return day;
+    }
+
+    return {
+      ...day,
+      items: nextItems,
+    };
+  });
+
+  return hasChanges ? nextDays : days;
+};
+
+export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProps) {
+  const categoryOptions = useMemo(() => getCategoryOptionsForGeneros(data.generos), [data.generos]);
+  const defaultCategory = categoryOptions[0] ?? CATEGORY_OPTIONS[0];
+
+  const updateTopField = <K extends "fechaDesde" | "fechaHasta" | "format">(field: K, value: PostData[K]) => {
     onChange({ ...data, [field]: value });
   };
 
   const toggleGenero = (genero: Gender, checked: boolean) => {
-    const nextGeneros = checked ? [...data.generos, genero] : data.generos.filter((item) => item !== genero);
-    onChange({ ...data, generos: nextGeneros });
+    const nextGeneros = checked
+      ? data.generos.includes(genero)
+        ? data.generos
+        : [...data.generos, genero]
+      : data.generos.filter((item) => item !== genero);
+
+    const nextCategoryOptions = getCategoryOptionsForGeneros(nextGeneros);
+    const nextDefaultCategory = nextCategoryOptions[0] ?? CATEGORY_OPTIONS[0];
+    const normalizedDays = normalizeTournamentCategories(data.days, nextCategoryOptions, nextDefaultCategory);
+
+    onChange({
+      ...data,
+      generos: nextGeneros,
+      days: normalizedDays,
+    });
   };
 
   const updateDays = (updater: (days: DayBlock[]) => DayBlock[]) => {
     onChange({ ...data, days: updater(data.days) });
   };
 
+  useEffect(() => {
+    const normalizedDays = normalizeTournamentCategories(data.days, categoryOptions, defaultCategory);
+    if (normalizedDays !== data.days) {
+      onChange({ ...data, days: normalizedDays });
+    }
+  }, [categoryOptions, data, defaultCategory, onChange]);
+
   const addDay = () => {
-    updateDays((days) => [...days, buildEmptyDay()]);
+    updateDays((days) => [...days, buildEmptyDay(defaultCategory)]);
   };
 
   const updateDay = (dayId: string, updater: (day: DayBlock) => DayBlock) => {
@@ -83,7 +146,7 @@ export function BuilderForm({ data, onChange, errors }: BuilderFormProps) {
   const addTournament = (dayId: string) => {
     updateDay(dayId, (day) => ({
       ...day,
-      items: [...day.items, buildEmptyTournament()],
+      items: [...day.items, buildEmptyTournament(defaultCategory)],
     }));
   };
 
@@ -121,19 +184,53 @@ export function BuilderForm({ data, onChange, errors }: BuilderFormProps) {
   return (
     <div className="space-y-5">
       <section className="rounded-2xl border border-white/15 bg-white/8 p-4 backdrop-blur-md">
-        <h2 className="text-base font-semibold">Datos generales</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">Datos generales</h2>
+          <button
+            type="button"
+            onClick={onReset}
+            className="rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+          >
+            Restablecer todo
+          </button>
+        </div>
         <div className="mt-3 grid gap-3">
-          <fieldset className="rounded-xl border border-white/15 bg-white/8 p-3">
-            <legend className="px-2 text-xs font-semibold text-white/80">Géneros (se pueden combinar)</legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              {GENERO_OPTIONS.map(({ label, Icon }) => {
-                const isSelected = data.generos.includes(label);
+          <fieldset className="m-0 min-w-0 border-0 bg-transparent p-0">
+            <legend className="px-0 text-xs font-semibold text-white/80">Formato Instagram</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {FORMAT_OPTIONS.map((option) => {
+                const isSelected = data.format === option.value;
                 return (
                   <button
-                    key={label}
+                    key={option.value}
                     type="button"
                     aria-pressed={isSelected}
-                    onClick={() => toggleGenero(label, !isSelected)}
+                    onClick={() => updateTopField("format", option.value)}
+                    className={`flex flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left font-semibold transition ${
+                      isSelected
+                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)]/25 text-white shadow-[0_0_0_1px_rgba(208,255,81,0.65)]"
+                        : "border-white/20 bg-white/5 text-white/90 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="text-sm font-semibold uppercase">{option.label}</span>
+                    <span className="text-xs text-white/75">{option.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <fieldset className="m-0 min-w-0 border-0 bg-transparent p-0">
+            <legend className="px-0 text-xs font-semibold text-white/80">Géneros (se pueden combinar)</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              {GENERO_OPTIONS.map(({ value, label, Icon }) => {
+                const isSelected = data.generos.includes(value);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => toggleGenero(value, !isSelected)}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                       isSelected
                         ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[#0f1216] shadow-[0_0_0_1px_rgba(208,255,81,0.65)]"
@@ -179,7 +276,7 @@ export function BuilderForm({ data, onChange, errors }: BuilderFormProps) {
           <button
             type="button"
             onClick={addDay}
-            className="rounded-lg border border-[var(--otp-lime)]/80 bg-[var(--otp-lime)]/10 px-3 py-1.5 text-xs font-semibold text-[var(--otp-lime)]"
+            className="rounded-lg border border-[var(--otp-lime)] bg-[var(--otp-lime)] px-3 py-1.5 text-xs font-semibold text-[var(--otp-blue)]"
           >
             + Agregar día
           </button>
@@ -201,6 +298,8 @@ export function BuilderForm({ data, onChange, errors }: BuilderFormProps) {
               onRemoveTournament={(itemId) => removeTournament(day.id, itemId)}
               onMoveTournamentUp={(itemId) => moveTournament(day.id, itemId, "up")}
               onMoveTournamentDown={(itemId) => moveTournament(day.id, itemId, "down")}
+              showStatus={data.format === "historia"}
+              categoryOptions={categoryOptions}
             />
           ))}
         </div>

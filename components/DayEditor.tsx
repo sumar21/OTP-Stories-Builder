@@ -6,6 +6,8 @@ type DayEditorProps = {
   day: DayBlock;
   dayIndex: number;
   totalDays: number;
+  showStatus: boolean;
+  categoryOptions: string[];
   onLabelChange: (value: string) => void;
   onRemoveDay: () => void;
   onAddTournament: () => void;
@@ -21,6 +23,8 @@ export function DayEditor({
   day,
   dayIndex,
   totalDays,
+  showStatus,
+  categoryOptions,
   onLabelChange,
   onRemoveDay,
   onAddTournament,
@@ -44,7 +48,7 @@ export function DayEditor({
                 onMoveDayUp();
               }}
               disabled={dayIndex === 0}
-              className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               Subir
             </button>
@@ -55,7 +59,7 @@ export function DayEditor({
                 onMoveDayDown();
               }}
               disabled={dayIndex === totalDays - 1}
-              className="rounded-lg border border-white/20 px-3 py-1.5 text-xs text-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               Bajar
             </button>
@@ -103,6 +107,8 @@ export function DayEditor({
               onRemove={() => onRemoveTournament(item.id)}
               onMoveUp={() => onMoveTournamentUp(item.id)}
               onMoveDown={() => onMoveTournamentDown(item.id)}
+              showStatus={showStatus}
+              categoryOptions={categoryOptions}
             />
           ))}
         </div>
