@@ -17,24 +17,48 @@ const buildCaptureConfig = (format: PostFormat) => {
   };
 };
 
+const waitForImage = (img: HTMLImageElement): Promise<void> => {
+  return new Promise((resolve) => {
+    // Some mobile browsers mark offscreen lazy images as complete without decoded pixels.
+    if (img.complete && img.naturalWidth > 0) {
+      resolve();
+      return;
+    }
+
+    img.loading = "eager";
+
+    let settled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve();
+    }, 3000);
+
+    const done = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timeoutId);
+      resolve();
+    };
+
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", done, { once: true });
+
+    if (typeof img.decode === "function") {
+      void img.decode().then(done).catch(() => {
+        // decode() may reject for SVGs or pending resources; load/error listeners handle completion.
+      });
+    }
+  });
+};
+
 const waitForImages = async (node: HTMLElement): Promise<void> => {
   const images = Array.from(node.querySelectorAll("img"));
-
-  await Promise.all(
-    images.map(
-      (img) =>
-        new Promise<void>((resolve) => {
-          if (img.complete) {
-            resolve();
-            return;
-          }
-
-          const done = () => resolve();
-          img.addEventListener("load", done, { once: true });
-          img.addEventListener("error", done, { once: true });
-        }),
-    ),
-  );
+  await Promise.all(images.map((img) => waitForImage(img)));
 };
 
 const waitForNodeReady = async (node: HTMLElement): Promise<void> => {

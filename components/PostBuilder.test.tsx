@@ -203,6 +203,24 @@ describe("PostBuilder", () => {
       expect(screen.getByLabelText("Sede *")).toBeInTheDocument();
       expect(screen.queryByLabelText("Género (opcional)")).not.toBeInTheDocument();
       expect(screen.getByText(slidePattern(1, 1))).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Descargar todo (ZIP)" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("muestra 'Descargar todo (ZIP)' cuando hay 2 o más slides", async () => {
+    render(<PostBuilder />);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Descargar todo (ZIP)" })).not.toBeInTheDocument();
+    });
+
+    const addDayButton = screen.getAllByText("+ Agregar día")[0];
+    fireEvent.click(addDayButton);
+    fireEvent.click(addDayButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(1, 2))).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Descargar todo (ZIP)" })).toBeInTheDocument();
     });
   });
 

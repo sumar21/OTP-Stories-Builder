@@ -254,7 +254,6 @@ export function PostBuilder() {
   const activeData = state.activePostType === "torneos" ? state.tournaments : state.loosePlayer;
   const debouncedActiveData = useDebouncedValue(activeData, 120);
   const errors = useMemo(() => validatePostData(activeData), [activeData]);
-  const hasCriticalErrors = errors.length > 0;
 
   const [slides, setSlides] = useState<SlideData[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -604,7 +603,8 @@ export function PostBuilder() {
 
         <section className={`${mobileTab === "preview" ? "flex" : "hidden"} otp-scrollbar flex-col gap-4 lg:flex lg:min-h-0 lg:overflow-y-auto lg:pl-2`}>
           <ExportButtons
-            disabled={hasCriticalErrors || slides.length === 0}
+            disabled={slides.length === 0}
+            showExportAll={activeData.postType === "torneos" && slides.length > 1}
             exportingCurrent={exportingCurrent}
             exportingAll={exportingAll}
             onExportCurrent={() => {

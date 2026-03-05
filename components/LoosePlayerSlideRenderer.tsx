@@ -22,17 +22,38 @@ export function LoosePlayerSlideRenderer({ data }: LoosePlayerSlideRendererProps
   return (
     <div className="relative size-full overflow-hidden bg-[#1638d5] text-[#f2f4ff]">
       <div className="pointer-events-none absolute inset-0">
-        <img src="/graphics/pelota-padel.png" alt="" aria-hidden className="absolute -left-[108px] -top-[52px] w-[316px] max-w-none" />
+        <img
+          src="/graphics/pelota-padel.png"
+          alt=""
+          aria-hidden
+          className="absolute -left-[108px] -top-[52px] w-[316px] max-w-none"
+          loading="eager"
+          decoding="sync"
+          fetchPriority="high"
+          draggable={false}
+        />
         <img
           src="/graphics/circulo-debajo-derecha.svg"
           alt=""
           aria-hidden
           className="absolute -bottom-[446px] -right-[336px] w-[882px] max-w-none"
+          loading="eager"
+          decoding="sync"
+          fetchPriority="high"
+          draggable={false}
         />
       </div>
 
       <div className="relative z-10 flex justify-end px-[80px] pt-[72px]">
-        <img src="/logos/otp-logo.svg" alt="OTP" className="h-[128px] w-[128px] object-contain" />
+        <img
+          src="/logos/otp-logo.svg"
+          alt="OTP"
+          className="h-[128px] w-[128px] object-contain"
+          loading="eager"
+          decoding="sync"
+          fetchPriority="high"
+          draggable={false}
+        />
       </div>
 
       <section className="absolute inset-0 z-10 flex flex-col items-center justify-center px-[84px] text-center">
