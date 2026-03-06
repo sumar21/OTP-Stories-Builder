@@ -2,7 +2,11 @@
 
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeftCircle, ArrowRightCircle, Mars, Shuffle, Venus, VenusAndMars } from "lucide-react";
-import { CATEGORY_OPTIONS_BY_GENDER, VENUE_OPTIONS, getCategoryOptionGroupsForGeneros } from "@/lib/tournamentOptions";
+import {
+  LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER,
+  VENUE_OPTIONS,
+  getLoosePlayerCategoryOptionGroupsForGeneros,
+} from "@/lib/tournamentOptions";
 import type { Gender, Hand, LoosePlayerPost, ValidationError } from "@/lib/types";
 
 type LoosePlayerBuilderFormProps = {
@@ -29,8 +33,8 @@ const resolveGeneroFromCategory = (categoria: string): Gender | null => {
     return null;
   }
 
-  for (const genero of Object.keys(CATEGORY_OPTIONS_BY_GENDER) as Gender[]) {
-    if (CATEGORY_OPTIONS_BY_GENDER[genero].includes(normalizedCategory)) {
+  for (const genero of Object.keys(LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER) as Gender[]) {
+    if (LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER[genero].includes(normalizedCategory)) {
       return genero;
     }
   }
@@ -43,14 +47,14 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
     onChange({ ...data, [field]: value });
   };
   const selectedGenero = resolveGeneroFromCategory(data.categoria);
-  const categoryOptionGroups = getCategoryOptionGroupsForGeneros(selectedGenero ? [selectedGenero] : []);
+  const categoryOptionGroups = getLoosePlayerCategoryOptionGroupsForGeneros(selectedGenero ? [selectedGenero] : []);
 
   const selectGenero = (genero: Gender) => {
     if (selectedGenero === genero) {
       updateField("categoria", "");
       return;
     }
-    updateField("categoria", CATEGORY_OPTIONS_BY_GENDER[genero][0] ?? "");
+    updateField("categoria", LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER[genero][0] ?? "");
   };
 
   return (

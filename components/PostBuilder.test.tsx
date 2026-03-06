@@ -209,11 +209,31 @@ describe("PostBuilder", () => {
     });
   });
 
-  it("en Jugador Suelto filtra categorías por género como en Torneos", async () => {
+  it("en Jugador Suelto filtra categorías por género con su listado específico", async () => {
     render(<PostBuilder />);
     fireEvent.click(screen.getByRole("button", { name: "Jugador Suelto" }));
 
     const categoriaSelect = (await screen.findByLabelText("Categoría *")) as HTMLSelectElement;
+
+    fireEvent.click(screen.getByRole("button", { name: "Caballeros" }));
+    await waitFor(() => {
+      expect(categoriaSelect).toHaveValue("C3");
+    });
+
+    const caballerosOptions = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
+    expect(caballerosOptions).toEqual([
+      "Seleccionar categoría",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C3/C4",
+      "C5/C6",
+      "C6/C7",
+      "C7/C8",
+    ]);
 
     fireEvent.click(screen.getByRole("button", { name: "Damas" }));
     await waitFor(() => {
@@ -221,7 +241,19 @@ describe("PostBuilder", () => {
     });
 
     const damasOptions = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
-    expect(damasOptions).toEqual(["Seleccionar categoría", "D3", "D4", "D4/D5", "D6/D7/D8", "D8"]);
+    expect(damasOptions).toEqual([
+      "Seleccionar categoría",
+      "D3",
+      "D4",
+      "D5",
+      "D6",
+      "D7",
+      "D8",
+      "D3/D4",
+      "D5/D6",
+      "D6/D7",
+      "D7/D8",
+    ]);
 
     fireEvent.click(screen.getByRole("button", { name: "Mixtos" }));
     await waitFor(() => {

@@ -13,6 +13,12 @@ export const CATEGORY_OPTIONS_BY_GENDER: Record<Gender, readonly string[]> = {
   Mixto: ["Suma 7", "Suma 8", "Suma 9", "Suma 10", "Suma 11", "Suma 12", "Suma 13", "Suma 14", "Suma 15", "Suma 16"],
 };
 
+export const LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER: Record<Gender, readonly string[]> = {
+  Masculino: ["C3", "C4", "C5", "C6", "C7", "C8", "C3/C4", "C5/C6", "C6/C7", "C7/C8"],
+  Femenino: ["D3", "D4", "D5", "D6", "D7", "D8", "D3/D4", "D5/D6", "D6/D7", "D7/D8"],
+  Mixto: ["Suma 7", "Suma 8", "Suma 9", "Suma 10", "Suma 11", "Suma 12", "Suma 13", "Suma 14", "Suma 15", "Suma 16"],
+};
+
 export const CATEGORY_OPTIONS = CATEGORY_GROUP_ORDER.flatMap((genero) => CATEGORY_OPTIONS_BY_GENDER[genero]);
 
 export type CategoryOptionGroup = {
@@ -47,6 +53,15 @@ export const getCategoryOptionGroupsForGeneros = (generos: Gender[]): CategoryOp
     genero,
     label: CATEGORY_GROUP_LABELS[genero],
     options: [...CATEGORY_OPTIONS_BY_GENDER[genero]],
+  }));
+};
+
+export const getLoosePlayerCategoryOptionGroupsForGeneros = (generos: Gender[]): CategoryOptionGroup[] => {
+  const orderedGeneros = getOrderedGeneros(generos);
+  return orderedGeneros.map((genero) => ({
+    genero,
+    label: CATEGORY_GROUP_LABELS[genero],
+    options: [...LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER[genero]],
   }));
 };
 
