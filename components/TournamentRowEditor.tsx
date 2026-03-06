@@ -1,4 +1,5 @@
 import type { TournamentItem } from "@/lib/types";
+import type { CategoryOptionGroup } from "@/lib/tournamentOptions";
 import { VENUE_OPTIONS } from "@/lib/tournamentOptions";
 
 type TournamentRowEditorProps = {
@@ -6,7 +7,7 @@ type TournamentRowEditorProps = {
   itemIndex: number;
   totalItems: number;
   showStatus: boolean;
-  categoryOptions: string[];
+  categoryOptionGroups: CategoryOptionGroup[];
   onChange: (patch: Partial<TournamentItem>) => void;
   onRemove: () => void;
   onMoveUp: () => void;
@@ -18,7 +19,7 @@ export function TournamentRowEditor({
   itemIndex,
   totalItems,
   showStatus,
-  categoryOptions,
+  categoryOptionGroups,
   onChange,
   onRemove,
   onMoveUp,
@@ -34,10 +35,14 @@ export function TournamentRowEditor({
             onChange={(event) => onChange({ categoria: event.target.value })}
             className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)]"
           >
-            {categoryOptions.map((categoria) => (
-              <option key={categoria} value={categoria} className="text-black">
-                {categoria}
-              </option>
+            {categoryOptionGroups.map((group) => (
+              <optgroup key={group.genero} label={group.label} className="text-black">
+                {group.options.map((categoria) => (
+                  <option key={categoria} value={categoria} className="text-black">
+                    {categoria}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </label>

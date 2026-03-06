@@ -116,11 +116,11 @@ describe("PostBuilder", () => {
     fireEvent.click(screen.getByRole("button", { name: "Damas" }));
 
     await waitFor(() => {
-      expect(categoriaSelect).toHaveValue("D4");
+      expect(categoriaSelect).toHaveValue("D3");
     });
 
     const options = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
-    expect(options).toEqual(["D4", "D4/D5", "D6/D7/D8", "D8"]);
+    expect(options).toEqual(["D3", "D4", "D4/D5", "D6/D7/D8", "D8"]);
   });
 
   it("paginación cambia slide cuando hay dos días", async () => {
@@ -197,14 +197,51 @@ describe("PostBuilder", () => {
     fireEvent.click(screen.getByRole("button", { name: "Jugador Suelto" }));
 
     await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Caballeros" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Damas" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Mixtos" })).toBeInTheDocument();
       expect(screen.getByLabelText("Categoría *")).toBeInTheDocument();
       expect(screen.getByLabelText("Fecha *")).toBeInTheDocument();
       expect(screen.getByLabelText("Hora *")).toBeInTheDocument();
       expect(screen.getByLabelText("Sede *")).toBeInTheDocument();
-      expect(screen.queryByLabelText("Género (opcional)")).not.toBeInTheDocument();
       expect(screen.getByText(slidePattern(1, 1))).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Descargar todo (ZIP)" })).not.toBeInTheDocument();
     });
+  });
+
+  it("en Jugador Suelto filtra categorías por género como en Torneos", async () => {
+    render(<PostBuilder />);
+    fireEvent.click(screen.getByRole("button", { name: "Jugador Suelto" }));
+
+    const categoriaSelect = (await screen.findByLabelText("Categoría *")) as HTMLSelectElement;
+
+    fireEvent.click(screen.getByRole("button", { name: "Damas" }));
+    await waitFor(() => {
+      expect(categoriaSelect).toHaveValue("D3");
+    });
+
+    const damasOptions = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
+    expect(damasOptions).toEqual(["Seleccionar categoría", "D3", "D4", "D4/D5", "D6/D7/D8", "D8"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Mixtos" }));
+    await waitFor(() => {
+      expect(categoriaSelect).toHaveValue("Suma 7");
+    });
+
+    const mixtosOptions = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
+    expect(mixtosOptions).toEqual([
+      "Seleccionar categoría",
+      "Suma 7",
+      "Suma 8",
+      "Suma 9",
+      "Suma 10",
+      "Suma 11",
+      "Suma 12",
+      "Suma 13",
+      "Suma 14",
+      "Suma 15",
+      "Suma 16",
+    ]);
   });
 
   it("muestra 'Descargar todo (ZIP)' cuando hay 2 o más slides", async () => {

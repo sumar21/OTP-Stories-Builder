@@ -1,9 +1,9 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { ArrowLeftCircle, ArrowRightCircle, Shuffle } from "lucide-react";
-import { CATEGORY_OPTIONS, VENUE_OPTIONS } from "@/lib/tournamentOptions";
-import type { Hand, LoosePlayerPost, ValidationError } from "@/lib/types";
+import { ArrowLeftCircle, ArrowRightCircle, Mars, Shuffle, Venus, VenusAndMars } from "lucide-react";
+import { CATEGORY_OPTIONS_BY_GENDER, VENUE_OPTIONS, getCategoryOptionGroupsForGeneros } from "@/lib/tournamentOptions";
+import type { Gender, Hand, LoosePlayerPost, ValidationError } from "@/lib/types";
 
 type LoosePlayerBuilderFormProps = {
   data: LoosePlayerPost;
@@ -17,10 +17,40 @@ const HAND_OPTIONS: { value: Hand; label: string; Icon: LucideIcon }[] = [
   { value: "REVES", label: "Revés", Icon: ArrowLeftCircle },
   { value: "INDISTINTO", label: "Indistinto", Icon: Shuffle },
 ];
+const GENERO_OPTIONS: { value: Gender; label: string; Icon: LucideIcon }[] = [
+  { value: "Masculino", label: "Caballeros", Icon: Mars },
+  { value: "Femenino", label: "Damas", Icon: Venus },
+  { value: "Mixto", label: "Mixtos", Icon: VenusAndMars },
+];
+
+const resolveGeneroFromCategory = (categoria: string): Gender | null => {
+  const normalizedCategory = categoria.trim();
+  if (!normalizedCategory) {
+    return null;
+  }
+
+  for (const genero of Object.keys(CATEGORY_OPTIONS_BY_GENDER) as Gender[]) {
+    if (CATEGORY_OPTIONS_BY_GENDER[genero].includes(normalizedCategory)) {
+      return genero;
+    }
+  }
+
+  return null;
+};
 
 export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: LoosePlayerBuilderFormProps) {
   const updateField = <K extends keyof LoosePlayerPost>(field: K, value: LoosePlayerPost[K]) => {
     onChange({ ...data, [field]: value });
+  };
+  const selectedGenero = resolveGeneroFromCategory(data.categoria);
+  const categoryOptionGroups = getCategoryOptionGroupsForGeneros(selectedGenero ? [selectedGenero] : []);
+
+  const selectGenero = (genero: Gender) => {
+    if (selectedGenero === genero) {
+      updateField("categoria", "");
+      return;
+    }
+    updateField("categoria", CATEGORY_OPTIONS_BY_GENDER[genero][0] ?? "");
   };
 
   return (
@@ -38,6 +68,31 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
         </div>
 
         <div className="mt-3 grid gap-3">
+          <fieldset className="m-0 min-w-0 border-0 bg-transparent p-0">
+            <legend className="px-0 text-xs font-semibold text-white/80">Género</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              {GENERO_OPTIONS.map(({ value, label, Icon }) => {
+                const isSelected = selectedGenero === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => selectGenero(value)}
+                    className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                      isSelected
+                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[#0f1216] shadow-[0_0_0_1px_rgba(208,255,81,0.65)]"
+                        : "border-[var(--otp-lime)]/65 bg-[var(--otp-lime)]/75 text-[#1c220b] hover:bg-[var(--otp-lime)]/90"
+                    }`}
+                  >
+                    <Icon className="size-4" aria-hidden="true" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
           <label className="flex flex-col gap-1 text-xs font-medium text-white/80">
             Categoría *
             <select
@@ -49,10 +104,14 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
               <option value="" className="text-black">
                 Seleccionar categoría
               </option>
-              {CATEGORY_OPTIONS.map((categoria) => (
-                <option key={categoria} value={categoria} className="text-black">
-                  {categoria}
-                </option>
+              {categoryOptionGroups.map((group) => (
+                <optgroup key={group.genero} label={group.label} className="text-black">
+                  {group.options.map((categoria) => (
+                    <option key={categoria} value={categoria} className="text-black">
+                      {categoria}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>

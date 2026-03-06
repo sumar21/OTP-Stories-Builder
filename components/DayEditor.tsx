@@ -1,5 +1,6 @@
 import type { DayBlock, TournamentItem } from "@/lib/types";
 import { TournamentRowEditor } from "@/components/TournamentRowEditor";
+import type { CategoryOptionGroup } from "@/lib/tournamentOptions";
 import { WEEKDAY_OPTIONS } from "@/lib/tournamentOptions";
 
 type DayEditorProps = {
@@ -7,7 +8,7 @@ type DayEditorProps = {
   dayIndex: number;
   totalDays: number;
   showStatus: boolean;
-  categoryOptions: string[];
+  categoryOptionGroups: CategoryOptionGroup[];
   onLabelChange: (value: string) => void;
   onRemoveDay: () => void;
   onAddTournament: () => void;
@@ -24,7 +25,7 @@ export function DayEditor({
   dayIndex,
   totalDays,
   showStatus,
-  categoryOptions,
+  categoryOptionGroups,
   onLabelChange,
   onRemoveDay,
   onAddTournament,
@@ -108,7 +109,7 @@ export function DayEditor({
               onMoveUp={() => onMoveTournamentUp(item.id)}
               onMoveDown={() => onMoveTournamentDown(item.id)}
               showStatus={showStatus}
-              categoryOptions={categoryOptions}
+              categoryOptionGroups={categoryOptionGroups}
             />
           ))}
         </div>

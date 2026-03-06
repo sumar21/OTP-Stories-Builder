@@ -6,7 +6,7 @@ import { Mars, Venus, VenusAndMars } from "lucide-react";
 import { nanoid } from "nanoid";
 import { DayEditor } from "@/components/DayEditor";
 import { SponsorsUploader } from "@/components/SponsorsUploader";
-import { CATEGORY_OPTIONS, getCategoryOptionsForGeneros, VENUE_OPTIONS } from "@/lib/tournamentOptions";
+import { CATEGORY_OPTIONS, getCategoryOptionGroupsForGeneros, getCategoryOptionsForGeneros, VENUE_OPTIONS } from "@/lib/tournamentOptions";
 import type { DayBlock, Gender, PostFormat, TournamentItem, TournamentPostData, ValidationError } from "@/lib/types";
 
 type BuilderFormProps = {
@@ -83,6 +83,7 @@ const normalizeTournamentCategories = (
 
 export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProps) {
   const categoryOptions = useMemo(() => getCategoryOptionsForGeneros(data.generos), [data.generos]);
+  const categoryOptionGroups = useMemo(() => getCategoryOptionGroupsForGeneros(data.generos), [data.generos]);
   const defaultCategory = categoryOptions[0] ?? CATEGORY_OPTIONS[0];
 
   const updateTopField = <K extends "fechaDesde" | "fechaHasta" | "format">(field: K, value: TournamentPostData[K]) => {
@@ -300,7 +301,7 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
               onMoveTournamentUp={(itemId) => moveTournament(day.id, itemId, "up")}
               onMoveTournamentDown={(itemId) => moveTournament(day.id, itemId, "down")}
               showStatus={data.format === "historia"}
-              categoryOptions={categoryOptions}
+              categoryOptionGroups={categoryOptionGroups}
             />
           ))}
         </div>
