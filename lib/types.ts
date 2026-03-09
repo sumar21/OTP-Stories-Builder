@@ -3,6 +3,7 @@ export type Status = "DISPONIBLE" | "ULTIMOS_CUPOS" | "COMPLETO";
 export type PostFormat = "historia" | "posteo";
 export type Hand = "DRIVE" | "REVES" | "INDISTINTO";
 export type PostType = "torneos" | "jugador_suelto";
+export type LoosePlayerWanted = "Dama" | "Caballero" | "Indistinto";
 
 export type Sponsor = {
   id: string;
@@ -39,7 +40,12 @@ export type LoosePlayerPost = {
   postType: "jugador_suelto";
   titulo: "BUSCAMOS JUGADOR";
   subtitulo?: string;
+  // Categoria del torneo (por ejemplo: C7/C8, D4/D5, Suma 11)
   categoria: string;
+  // A quien buscamos para un MIXTO.
+  buscamos: LoosePlayerWanted;
+  // Categoria de la persona buscada (por ejemplo: D3) para armar "D3 / MIXTO +11".
+  categoriaBuscada: string;
   fecha: string;
   hora: string;
   sede: string;

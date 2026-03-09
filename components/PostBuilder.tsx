@@ -32,6 +32,7 @@ const STATUS_VALUES = new Set(["DISPONIBLE", "ULTIMOS_CUPOS", "COMPLETO"]);
 const FORMAT_VALUES = new Set(["historia", "posteo"]);
 const HAND_VALUES = new Set(["DRIVE", "REVES", "INDISTINTO"]);
 const POST_TYPE_VALUES = new Set(["torneos", "jugador_suelto"]);
+const LOOSE_PLAYER_WANTED_VALUES = new Set(["Dama", "Caballero", "Indistinto"]);
 
 type PendingMeasure = {
   id: number;
@@ -181,11 +182,17 @@ const parseLoosePlayerData = (value: unknown): LoosePlayerPost | null => {
     return null;
   }
 
+  const buscamos = value.buscamos;
+  const resolvedBuscamos =
+    typeof buscamos === "string" && LOOSE_PLAYER_WANTED_VALUES.has(buscamos) ? (buscamos as LoosePlayerPost["buscamos"]) : "Indistinto";
+
   return {
     postType: "jugador_suelto",
     titulo: "BUSCAMOS JUGADOR",
     subtitulo: typeof value.subtitulo === "string" ? value.subtitulo : "TORNEO AMERICANO",
     categoria: value.categoria,
+    buscamos: resolvedBuscamos,
+    categoriaBuscada: typeof value.categoriaBuscada === "string" ? value.categoriaBuscada : "",
     fecha: value.fecha,
     hora: value.hora,
     sede: value.sede,

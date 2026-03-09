@@ -21,21 +21,41 @@ export function LoosePlayerSlideRenderer({ data }: LoosePlayerSlideRendererProps
   const upperCategory = normalizedCategory.toUpperCase();
   const isMixedCategory = upperCategory.startsWith("SUMA") || upperCategory.startsWith("MIXTO");
   const isFemeninoCategory = !isMixedCategory && upperCategory.startsWith("D");
-  const playerLabel = isMixedCategory ? "JUGADORA O JUGADOR" : isFemeninoCategory ? "JUGADORA" : "JUGADOR";
-  const categoryLabel = normalizedCategory
+  const wantedLabel = data.buscamos === "Dama" ? "JUGADORA" : data.buscamos === "Caballero" ? "JUGADOR" : "JUGADORA O JUGADOR";
+  const playerLabel = isMixedCategory ? wantedLabel : isFemeninoCategory ? "JUGADORA" : "JUGADOR";
+
+  const tournamentCategoryLabel = normalizedCategory
     ? isMixedCategory
-      ? upperCategory.replace(/^SUMA\b/, "MIXTO")
+      ? upperCategory.replace(/^SUMA\s*/u, "MIXTO +")
       : upperCategory
     : "--";
-  const playerTitleClass = isMixedCategory
-    ? "max-w-full text-[96px] leading-[0.93] tracking-[-0.015em]"
-    : "text-[186px] leading-[0.92] tracking-[-0.03em]";
+  const normalizedWantedCategory = isMixedCategory ? data.categoriaBuscada.trim().replace(/\s+/g, " ") : "";
+  const wantedCategoryLabel = normalizedWantedCategory ? normalizedWantedCategory.toUpperCase() : "";
+  const categoryLabel =
+    isMixedCategory && wantedCategoryLabel ? `${wantedCategoryLabel} / ${tournamentCategoryLabel}` : tournamentCategoryLabel;
+  const categoryMetaLength = `${categoryLabel}${handLabel ?? ""}`.replace(/\s+/g, "").length;
+  const shouldCompactCategoryMeta = !isMixedCategory && Boolean(handLabel) && categoryMetaLength >= 14;
+  const playerTitleClass =
+    isMixedCategory && data.buscamos === "Indistinto"
+      ? "max-w-full text-[96px] leading-[0.93] tracking-[-0.015em]"
+      : "text-[186px] leading-[0.92] tracking-[-0.03em]";
   const categoryLineClass = isMixedCategory
-    ? "mt-[44px] flex items-center justify-center gap-[14px] text-[70px] leading-[0.95] font-extrabold tracking-[-0.015em] text-[var(--otp-lime)]"
-    : "mt-[52px] flex items-center justify-center gap-[20px] text-[118px] leading-none font-extrabold tracking-[-0.02em] text-[var(--otp-lime)]";
-  const separatorClass = isMixedCategory ? "text-[58px] leading-none text-[#8290de]" : "text-[102px] leading-none text-[#8290de]";
-  const handGroupClass = isMixedCategory ? "inline-flex items-center gap-[10px]" : "inline-flex items-center gap-[14px]";
-  const handIconClass = isMixedCategory ? "size-[52px]" : "size-[88px]";
+    ? "mt-[44px] flex items-center justify-center gap-[14px] text-[78px] leading-[0.95] font-extrabold tracking-[-0.015em] text-[var(--otp-lime)]"
+    : shouldCompactCategoryMeta
+      ? "mt-[48px] flex max-w-full flex-wrap items-center justify-center gap-x-[18px] gap-y-[14px] text-[92px] leading-[0.92] font-extrabold tracking-[-0.02em] text-[var(--otp-lime)]"
+      : "mt-[52px] flex max-w-full flex-wrap items-center justify-center gap-x-[20px] gap-y-[14px] text-[118px] leading-none font-extrabold tracking-[-0.02em] text-[var(--otp-lime)]";
+  const separatorClass = isMixedCategory
+    ? "text-[64px] leading-none text-[#8290de]"
+    : shouldCompactCategoryMeta
+      ? "text-[76px] leading-none text-[#8290de]"
+      : "text-[102px] leading-none text-[#8290de]";
+  const handMetaClass = isMixedCategory
+    ? "inline-flex items-center gap-[14px]"
+    : shouldCompactCategoryMeta
+      ? "inline-flex items-center gap-[12px]"
+      : "inline-flex items-center gap-[14px]";
+  const handGroupClass = isMixedCategory ? "inline-flex items-center gap-[12px]" : "inline-flex items-center gap-[14px]";
+  const handIconClass = isMixedCategory ? "size-[58px]" : shouldCompactCategoryMeta ? "size-[72px]" : "size-[88px]";
 
   return (
     <div className="relative size-full overflow-hidden bg-[#1638d5] text-[#f2f4ff]">
@@ -84,13 +104,13 @@ export function LoosePlayerSlideRenderer({ data }: LoosePlayerSlideRendererProps
         <div className={categoryLineClass}>
           <span>{categoryLabel}</span>
           {handLabel && HandIcon ? (
-            <>
+            <span className={handMetaClass}>
               <span className={separatorClass}>|</span>
               <span className={handGroupClass}>
                 <HandIcon className={handIconClass} strokeWidth={2.4} />
                 {handLabel}
               </span>
-            </>
+            </span>
           ) : null}
         </div>
 

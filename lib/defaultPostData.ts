@@ -17,6 +17,8 @@ export const defaultLoosePlayerPostData = (): LoosePlayerPost => ({
   titulo: "BUSCAMOS JUGADOR",
   subtitulo: "TORNEO AMERICANO",
   categoria: "",
+  buscamos: "Indistinto",
+  categoriaBuscada: "",
   fecha: "",
   hora: "",
   sede: "",
