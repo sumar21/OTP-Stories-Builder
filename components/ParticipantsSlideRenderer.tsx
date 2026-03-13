@@ -22,10 +22,10 @@ const CUP_TAG_SRC: Record<ParticipantCard["copa"], string> = {
 
 const OTP_LOGO_SRC = "/logos/otp-logo.svg";
 const CUP_TAG_HEIGHT = 36;
-const PHOTO_SHADE_GRADIENT =
-  "linear-gradient(180deg, rgba(7,18,66,0) 0%, rgba(7,18,66,0) 58%, rgba(4,13,52,0.06) 72%, rgba(3,9,38,0.22) 86%, rgba(3,9,38,0.48) 100%)";
-const BLUE_BACKGROUND_GRADIENT =
-  "linear-gradient(180deg, rgba(11,56,214,0) 0%, rgba(11,56,214,0) 66%, rgba(11,56,214,0.12) 78%, rgba(11,56,214,0.34) 88%, rgba(11,56,214,0.72) 96%, rgba(11,56,214,0.94) 100%)";
+const PHOTO_TINT_GRADIENT =
+  "linear-gradient(180deg, rgba(11,56,214,0) 0%, rgba(11,56,214,0) 54%, rgba(11,56,214,0.03) 66%, rgba(11,56,214,0.08) 76%, rgba(11,56,214,0.16) 86%, rgba(11,56,214,0.32) 94%, rgba(11,56,214,0.56) 100%)";
+const PHOTO_DEPTH_GRADIENT =
+  "radial-gradient(120% 42% at 50% 100%, rgba(5,16,60,0.34) 0%, rgba(5,16,60,0.18) 38%, rgba(5,16,60,0.08) 62%, rgba(5,16,60,0) 82%)";
 
 export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererProps) {
   const formattedDate = formatToDayMonth(card.fecha);
@@ -57,7 +57,7 @@ export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererPro
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage: `${PHOTO_SHADE_GRADIENT}, ${BLUE_BACKGROUND_GRADIENT}`,
+          backgroundImage: `${PHOTO_DEPTH_GRADIENT}, ${PHOTO_TINT_GRADIENT}`,
           backgroundRepeat: "no-repeat",
           backgroundSize: "100% 100%",
         }}
