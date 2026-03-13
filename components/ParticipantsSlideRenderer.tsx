@@ -23,9 +23,9 @@ const CUP_TAG_SRC: Record<ParticipantCard["copa"], string> = {
 const OTP_LOGO_SRC = "/logos/otp-logo.svg";
 const CUP_TAG_HEIGHT = 36;
 const PHOTO_TINT_GRADIENT =
-  "linear-gradient(180deg, rgba(11,56,214,0) 0%, rgba(11,56,214,0.02) 38%, rgba(11,56,214,0.06) 58%, rgba(11,56,214,0.14) 76%, rgba(11,56,214,0.3) 90%, rgba(11,56,214,0.5) 100%)";
+  "linear-gradient(180deg, rgba(11,56,214,0) 0%, rgba(11,56,214,0.01) 44%, rgba(11,56,214,0.03) 58%, rgba(11,56,214,0.08) 72%, rgba(11,56,214,0.16) 84%, rgba(11,56,214,0.3) 93%, rgba(11,56,214,0.5) 100%)";
 const PHOTO_BASE_GRADIENT =
-  "linear-gradient(180deg, rgba(6,17,64,0) 0%, rgba(6,17,64,0.06) 42%, rgba(6,17,64,0.14) 68%, rgba(6,17,64,0.24) 86%, rgba(6,17,64,0.34) 100%)";
+  "linear-gradient(180deg, rgba(6,17,64,0) 0%, rgba(6,17,64,0.01) 52%, rgba(6,17,64,0.05) 68%, rgba(6,17,64,0.12) 82%, rgba(6,17,64,0.22) 92%, rgba(6,17,64,0.32) 100%)";
 
 export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererProps) {
   const formattedDate = formatToDayMonth(card.fecha);
@@ -54,8 +54,8 @@ export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererPro
         />
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[34%]" style={{ background: PHOTO_TINT_GRADIENT }} />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[52%]" style={{ background: PHOTO_BASE_GRADIENT }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: PHOTO_TINT_GRADIENT }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: PHOTO_BASE_GRADIENT }} />
 
       <div className="absolute inset-x-[34px] bottom-[34px] grid h-[135px] grid-cols-[98px_minmax(0,1fr)_132px] items-center gap-[10px] rounded-[20px] border border-[#5f80fb] bg-[#0B38D6] px-[11px] py-[11px] shadow-[0_16px_30px_rgba(3,10,42,0.4)]">
         <div className="flex h-[80px] w-[80px] items-center justify-center justify-self-center self-center rounded-[10px] bg-[var(--otp-lime)]">
