@@ -18,6 +18,15 @@ const buildCaptureConfig = (format: PostFormat) => {
   };
 };
 
+const isMobileBrowser = (): boolean => {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  const ua = navigator.userAgent;
+  return /Android|iPhone|iPad|iPod|CriOS|FxiOS|EdgiOS|OPiOS|Mobile/i.test(ua);
+};
+
 const isMobileChrome = (): boolean => {
   if (typeof navigator === "undefined") {
     return false;
@@ -143,11 +152,39 @@ export async function exportCurrentSlidePng(
   format: PostFormat,
   filePrefix = "otp_slide",
 ): Promise<void> {
-  await waitForNodeReady(node);
-  const dataUrl = await toPng(node, buildCaptureConfig(format));
-  const response = await fetch(dataUrl);
-  const blob = await response.blob();
-  await downloadBlob(blob, makeSlideName(index, filePrefix));
+  const fileName = makeSlideName(index, filePrefix);
+  const shouldUseMobilePreviewFallback = isMobileBrowser();
+  const mobilePreviewWindow = shouldUseMobilePreviewFallback ? window.open("", "_blank", "noopener,noreferrer") : null;
+
+  if (mobilePreviewWindow) {
+    mobilePreviewWindow.document.title = "Generando imagen...";
+    mobilePreviewWindow.document.body.style.margin = "0";
+    mobilePreviewWindow.document.body.style.background = "#0b38d6";
+  }
+
+  try {
+    await waitForNodeReady(node);
+    const dataUrl = await toPng(node, buildCaptureConfig(format));
+
+    if (mobilePreviewWindow && !mobilePreviewWindow.closed) {
+      mobilePreviewWindow.location.href = dataUrl;
+      return;
+    }
+
+    if (shouldUseMobilePreviewFallback) {
+      window.location.href = dataUrl;
+      return;
+    }
+
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    await downloadBlob(blob, fileName);
+  } catch (error) {
+    if (mobilePreviewWindow && !mobilePreviewWindow.closed) {
+      mobilePreviewWindow.close();
+    }
+    throw error;
+  }
 }
 
 export async function exportAllSlidesZip(

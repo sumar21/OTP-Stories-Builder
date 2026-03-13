@@ -50,4 +50,11 @@ describe("ParticipantsSlideRenderer", () => {
 
     expect(screen.getByText("Suma 11")).toHaveClass("text-[16px]");
   });
+
+  it("renderiza la sombra por debajo de la tarjeta en una capa separada", () => {
+    render(<ParticipantsSlideRenderer card={buildCard()} />);
+
+    expect(screen.getByTestId("participants-card-shadow")).toHaveClass("-bottom-[12px]", "blur-[14px]");
+    expect(screen.getByTestId("participants-card")).not.toHaveClass("shadow-[0_16px_30px_rgba(3,10,42,0.4)]");
+  });
 });
