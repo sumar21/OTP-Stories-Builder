@@ -22,6 +22,10 @@ const CUP_TAG_SRC: Record<ParticipantCard["copa"], string> = {
 
 const OTP_LOGO_SRC = "/logos/otp-logo.svg";
 const CUP_TAG_HEIGHT = 36;
+const PHOTO_SHADE_GRADIENT =
+  "linear-gradient(180deg, rgba(7,18,66,0) 0%, rgba(7,18,66,0) 58%, rgba(4,13,52,0.06) 72%, rgba(3,9,38,0.22) 86%, rgba(3,9,38,0.48) 100%)";
+const BLUE_BACKGROUND_GRADIENT =
+  "linear-gradient(180deg, rgba(11,56,214,0) 0%, rgba(11,56,214,0) 66%, rgba(11,56,214,0.12) 78%, rgba(11,56,214,0.34) 88%, rgba(11,56,214,0.72) 96%, rgba(11,56,214,0.94) 100%)";
 
 export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererProps) {
   const formattedDate = formatToDayMonth(card.fecha);
@@ -39,25 +43,24 @@ export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererPro
 
   return (
     <div className="relative size-full overflow-hidden bg-[#0b38d6] text-[#f5f7ff]">
-      <img
-        src={card.fotoDataUrl || "/graphics/fondo-participantes.png"}
-        alt="Participantes del torneo"
-        className="absolute inset-0 size-full object-cover"
-        loading="eager"
-        decoding="sync"
-        draggable={false}
-      />
+      {card.fotoDataUrl ? (
+        <img
+          src={card.fotoDataUrl}
+          alt="Participantes del torneo"
+          className="absolute inset-0 size-full object-cover"
+          loading="eager"
+          decoding="sync"
+          draggable={false}
+        />
+      ) : null}
 
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,18,66,0.08)_0%,rgba(4,13,52,0.24)_48%,rgba(3,9,38,0.85)_100%)]" />
-
-      <img
-        src="/graphics/fondo-participantes.png"
-        alt=""
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 w-full object-cover"
-        loading="eager"
-        decoding="sync"
-        draggable={false}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: `${PHOTO_SHADE_GRADIENT}, ${BLUE_BACKGROUND_GRADIENT}`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "100% 100%",
+        }}
       />
 
       <div className="absolute inset-x-[34px] bottom-[34px] grid h-[135px] grid-cols-[98px_minmax(0,1fr)_132px] items-center gap-[10px] rounded-[20px] border border-[#5f80fb] bg-[#0B38D6] px-[11px] py-[11px] shadow-[0_16px_30px_rgba(3,10,42,0.4)]">
