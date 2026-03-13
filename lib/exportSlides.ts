@@ -18,6 +18,70 @@ const buildCaptureConfig = (format: PostFormat) => {
   };
 };
 
+const isMobileChrome = (): boolean => {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  const ua = navigator.userAgent;
+  return /CriOS/i.test(ua) || (/Android/i.test(ua) && /Chrome/i.test(ua));
+};
+
+const triggerAnchorDownload = (href: string, fileName: string): void => {
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.download = fileName;
+  anchor.rel = "noopener";
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+};
+
+const shareBlob = async (blob: Blob, fileName: string): Promise<boolean> => {
+  if (typeof navigator === "undefined" || typeof File === "undefined") {
+    return false;
+  }
+
+  const nav = navigator as Navigator & {
+    canShare?: (data?: ShareData) => boolean;
+  };
+
+  if (typeof nav.share !== "function") {
+    return false;
+  }
+
+  try {
+    const file = new File([blob], fileName, { type: blob.type || "application/octet-stream" });
+    const shareData = { files: [file], title: fileName } as ShareData;
+    if (typeof nav.canShare === "function" && !nav.canShare(shareData)) {
+      return false;
+    }
+    await nav.share(shareData);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const downloadBlob = async (blob: Blob, fileName: string): Promise<void> => {
+  if (!isMobileChrome()) {
+    saveAs(blob, fileName);
+    return;
+  }
+
+  if (await shareBlob(blob, fileName)) {
+    return;
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    triggerAnchorDownload(objectUrl, fileName);
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
+  }
+};
+
 const waitForImage = (img: HTMLImageElement): Promise<void> => {
   return new Promise((resolve) => {
     // Some mobile browsers mark offscreen lazy images as complete without decoded pixels.
@@ -83,7 +147,7 @@ export async function exportCurrentSlidePng(
   const dataUrl = await toPng(node, buildCaptureConfig(format));
   const response = await fetch(dataUrl);
   const blob = await response.blob();
-  saveAs(blob, makeSlideName(index, filePrefix));
+  await downloadBlob(blob, makeSlideName(index, filePrefix));
 }
 
 export async function exportAllSlidesZip(
@@ -104,5 +168,5 @@ export async function exportAllSlidesZip(
   }
 
   const blob = await zip.generateAsync({ type: "blob" });
-  saveAs(blob, `${filePrefix}.zip`);
+  await downloadBlob(blob, `${filePrefix}.zip`);
 }
