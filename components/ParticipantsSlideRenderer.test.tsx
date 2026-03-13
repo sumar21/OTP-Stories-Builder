@@ -57,4 +57,10 @@ describe("ParticipantsSlideRenderer", () => {
     expect(screen.getByTestId("participants-card-shadow")).toHaveClass("-bottom-[12px]", "blur-[14px]");
     expect(screen.getByTestId("participants-card")).not.toHaveClass("shadow-[0_16px_30px_rgba(3,10,42,0.4)]");
   });
+
+  it("usa el borde azul solicitado para la tarjeta", () => {
+    render(<ParticipantsSlideRenderer card={buildCard()} />);
+
+    expect(screen.getByTestId("participants-card")).toHaveClass("border-[#4268EB]");
+  });
 });

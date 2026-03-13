@@ -58,7 +58,7 @@ export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererPro
         />
 
         <div
-          className="relative z-10 grid h-[135px] grid-cols-[98px_minmax(0,1fr)_132px] items-center gap-[10px] rounded-[20px] border border-[#5f80fb] bg-[#0B38D6] px-[11px] py-[11px]"
+          className="relative z-10 grid h-[135px] grid-cols-[98px_minmax(0,1fr)_132px] items-center gap-[10px] rounded-[20px] border border-[#4268EB] bg-[#0B38D6] px-[11px] py-[11px]"
           data-testid="participants-card"
         >
           <div className="flex h-[80px] w-[80px] items-center justify-center justify-self-center self-center rounded-[10px] bg-[var(--otp-lime)]">
