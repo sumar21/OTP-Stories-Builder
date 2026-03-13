@@ -8,5 +8,11 @@ export const getSlideSize = (format: PostFormat) => {
 };
 
 export const getPostFormat = (data: PostData): PostFormat => {
-  return data.postType === "torneos" ? data.format : "historia";
+  if (data.postType === "torneos") {
+    return data.format;
+  }
+  if (data.postType === "participantes") {
+    return "posteo";
+  }
+  return "historia";
 };

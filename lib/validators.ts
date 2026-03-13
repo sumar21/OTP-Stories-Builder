@@ -1,4 +1,4 @@
-import type { LoosePlayerPost, PostData, TournamentPostData, ValidationError } from "@/lib/types";
+import type { LoosePlayerPost, ParticipantsPost, PostData, TournamentPostData, ValidationError } from "@/lib/types";
 
 const validateSponsors = (errors: ValidationError[], sponsors: { logoDataUrl: string; name: string }[], pathPrefix: string) => {
   sponsors.forEach((sponsor, index) => {
@@ -88,9 +88,56 @@ const validateLoosePlayerData = (data: LoosePlayerPost): ValidationError[] => {
   return errors;
 };
 
+const validateParticipantsData = (data: ParticipantsPost): ValidationError[] => {
+  const errors: ValidationError[] = [];
+
+  if (data.cards.length === 0) {
+    errors.push({ path: "cards", message: "Agregá al menos una tarjeta de participantes." });
+    return errors;
+  }
+
+  data.cards.forEach((card, cardIndex) => {
+    if (!card.fotoDataUrl.trim()) {
+      errors.push({
+        path: `cards.${cardIndex}.fotoDataUrl`,
+        message: `Tarjeta ${cardIndex + 1}: la foto es obligatoria.`,
+      });
+    }
+    if (!card.categoria.trim()) {
+      errors.push({
+        path: `cards.${cardIndex}.categoria`,
+        message: `Tarjeta ${cardIndex + 1}: la categoría es obligatoria.`,
+      });
+    }
+    if (!card.nombreParticipante1.trim()) {
+      errors.push({
+        path: `cards.${cardIndex}.nombreParticipante1`,
+        message: `Tarjeta ${cardIndex + 1}: nombre del participante 1 obligatorio.`,
+      });
+    }
+    if (!card.nombreParticipante2.trim()) {
+      errors.push({
+        path: `cards.${cardIndex}.nombreParticipante2`,
+        message: `Tarjeta ${cardIndex + 1}: nombre del participante 2 obligatorio.`,
+      });
+    }
+    if (!card.fecha.trim()) {
+      errors.push({
+        path: `cards.${cardIndex}.fecha`,
+        message: `Tarjeta ${cardIndex + 1}: la fecha es obligatoria.`,
+      });
+    }
+  });
+
+  return errors;
+};
+
 export const validatePostData = (data: PostData): ValidationError[] => {
   if (data.postType === "torneos") {
     return validateTournamentsData(data);
+  }
+  if (data.postType === "participantes") {
+    return validateParticipantsData(data);
   }
 
   return validateLoosePlayerData(data);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validatePostData } from "@/lib/validators";
-import type { TournamentPostData } from "@/lib/types";
+import type { ParticipantsPost, TournamentPostData } from "@/lib/types";
 
 const makeData = (override?: Partial<TournamentPostData>): TournamentPostData => ({
   postType: "torneos",
@@ -28,6 +28,24 @@ const makeData = (override?: Partial<TournamentPostData>): TournamentPostData =>
   ...override,
 });
 
+const makeParticipantsData = (override?: Partial<ParticipantsPost>): ParticipantsPost => ({
+  postType: "participantes",
+  titulo: "PARTICIPANTES DEL TORNEO",
+  cards: [
+    {
+      id: "card-1",
+      fotoDataUrl: "data:image/png;base64,test",
+      categoria: "C4",
+      nombreParticipante1: "Matias",
+      nombreParticipante2: "Federico",
+      fecha: "2026-01-12",
+      resultado: "campeones",
+      copa: "oro",
+    },
+  ],
+  ...override,
+});
+
 describe("validatePostData", () => {
   it("marca error cuando no hay días", () => {
     const errors = validatePostData(makeData({ days: [] }));
@@ -42,5 +60,20 @@ describe("validatePostData", () => {
     );
 
     expect(errors.some((error) => error.path === "days.0.items")).toBe(true);
+  });
+
+  it("marca error cuando participantes no tiene tarjetas", () => {
+    const errors = validatePostData(makeParticipantsData({ cards: [] }));
+    expect(errors.some((error) => error.path === "cards")).toBe(true);
+  });
+
+  it("marca error cuando falta foto en una tarjeta de participantes", () => {
+    const errors = validatePostData(
+      makeParticipantsData({
+        cards: [{ ...makeParticipantsData().cards[0], fotoDataUrl: "" }],
+      }),
+    );
+
+    expect(errors.some((error) => error.path === "cards.0.fotoDataUrl")).toBe(true);
   });
 });

@@ -2,8 +2,10 @@ export type Gender = "Masculino" | "Femenino" | "Mixto";
 export type Status = "DISPONIBLE" | "ULTIMOS_CUPOS" | "COMPLETO";
 export type PostFormat = "historia" | "posteo";
 export type Hand = "DRIVE" | "REVES" | "INDISTINTO";
-export type PostType = "torneos" | "jugador_suelto";
+export type PostType = "torneos" | "jugador_suelto" | "participantes";
 export type LoosePlayerWanted = "Dama" | "Caballero" | "Indistinto";
+export type ParticipantsResult = "campeones" | "subcampeones";
+export type ParticipantsCup = "oro" | "plata";
 
 export type Sponsor = {
   id: string;
@@ -52,7 +54,24 @@ export type LoosePlayerPost = {
   mano?: Hand;
 };
 
-export type PostData = TournamentPostData | LoosePlayerPost;
+export type ParticipantCard = {
+  id: string;
+  fotoDataUrl: string;
+  categoria: string;
+  nombreParticipante1: string;
+  nombreParticipante2: string;
+  fecha: string;
+  resultado: ParticipantsResult;
+  copa: ParticipantsCup;
+};
+
+export type ParticipantsPost = {
+  postType: "participantes";
+  titulo: "PARTICIPANTES DEL TORNEO";
+  cards: ParticipantCard[];
+};
+
+export type PostData = TournamentPostData | LoosePlayerPost | ParticipantsPost;
 
 export type DaySlice = {
   dayId: string;
@@ -75,7 +94,15 @@ export type LoosePlayerSlideData = {
   days: [];
 };
 
-export type SlideData = TournamentSlideData | LoosePlayerSlideData;
+export type ParticipantsSlideData = {
+  slideIndex: number;
+  totalSlides: number;
+  type: "participants";
+  card: ParticipantCard;
+  days: [];
+};
+
+export type SlideData = TournamentSlideData | LoosePlayerSlideData | ParticipantsSlideData;
 
 export type ValidationError = {
   path: string;

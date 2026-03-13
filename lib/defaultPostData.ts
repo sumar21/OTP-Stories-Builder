@@ -1,5 +1,6 @@
 import { getDefaultSponsors } from "@/lib/defaultSponsors";
-import type { LoosePlayerPost, TournamentPostData } from "@/lib/types";
+import { nanoid } from "nanoid";
+import type { LoosePlayerPost, ParticipantCard, ParticipantsPost, TournamentPostData } from "@/lib/types";
 
 export const defaultTournamentPostData = (): TournamentPostData => ({
   postType: "torneos",
@@ -22,6 +23,23 @@ export const defaultLoosePlayerPostData = (): LoosePlayerPost => ({
   fecha: "",
   hora: "",
   sede: "",
+});
+
+export const buildDefaultParticipantCard = (): ParticipantCard => ({
+  id: nanoid(),
+  fotoDataUrl: "",
+  categoria: "C4",
+  nombreParticipante1: "",
+  nombreParticipante2: "",
+  fecha: "",
+  resultado: "campeones",
+  copa: "oro",
+});
+
+export const defaultParticipantsPostData = (): ParticipantsPost => ({
+  postType: "participantes",
+  titulo: "PARTICIPANTES DEL TORNEO",
+  cards: [buildDefaultParticipantCard()],
 });
 
 export const defaultPostData = defaultTournamentPostData;

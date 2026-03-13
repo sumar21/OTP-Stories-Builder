@@ -2,19 +2,15 @@ import { CircleCheck, Hourglass, Lock } from "lucide-react";
 import clsx from "clsx";
 import type { CSSProperties, Ref } from "react";
 import { LoosePlayerSlideRenderer } from "@/components/LoosePlayerSlideRenderer";
+import { ParticipantsSlideRenderer } from "@/components/ParticipantsSlideRenderer";
 import { SponsorsFooter } from "@/components/SponsorsFooter";
 import { formatToDayMonth } from "@/lib/date";
 import { getPostFormat, getSlideSize } from "@/lib/slideFormat";
-import type { DaySlice, Gender, PostData, Status, TournamentPostData } from "@/lib/types";
+import type { DaySlice, Gender, PostData, SlideData, Status, TournamentPostData } from "@/lib/types";
 
 type SlideRendererProps = {
   data: PostData;
-  slide: {
-    slideIndex: number;
-    totalSlides: number;
-    type: "tournaments" | "closing" | "loose-player";
-    days: DaySlice[];
-  };
+  slide: SlideData;
   slideRef?: Ref<HTMLDivElement>;
   className?: string;
   style?: CSSProperties;
@@ -141,6 +137,21 @@ export function SlideRenderer({ data, slide, slideRef, className, style }: Slide
         data-slide-type="loose-player"
       >
         <LoosePlayerSlideRenderer data={data} />
+      </div>
+    );
+  }
+
+  if (slide.type === "participants" && data.postType === "participantes") {
+    return (
+      <div
+        ref={slideRef}
+        className={clsx("slide-root", className)}
+        style={mergedStyle}
+        data-slide-root
+        data-format="posteo"
+        data-slide-type="participants"
+      >
+        <ParticipantsSlideRenderer card={slide.card} />
       </div>
     );
   }

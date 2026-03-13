@@ -276,6 +276,167 @@ describe("PostBuilder", () => {
     ]);
   });
 
+  it("permite cambiar al modo Participantes y renderiza su formulario", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Participantes" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Formato fijo: Posteo 1080x1350.")).toBeInTheDocument();
+      expect(screen.getByText("Tarjeta 1")).toBeInTheDocument();
+      expect(screen.getByLabelText("Participante 1 *")).toBeInTheDocument();
+      expect(screen.getByLabelText("Participante 2 *")).toBeInTheDocument();
+      expect(screen.getByText(slidePattern(1, 1))).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Descargar todo (ZIP)" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("en Participantes agrega tarjetas y habilita ZIP con 2 o más slides", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Participantes" }));
+    fireEvent.click(screen.getByRole("button", { name: "+ Agregar tarjeta" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Tarjeta 2")).toBeInTheDocument();
+      expect(screen.getByText(slidePattern(1, 2))).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Descargar todo (ZIP)" })).toBeInTheDocument();
+    });
+  });
+
+  it("persistencia: guarda datos de participantes en localStorage", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Participantes" }));
+    fireEvent.change(screen.getByLabelText("Participante 1 *"), { target: { value: "Matias Antunez" } });
+
+    await waitFor(() => {
+      const raw = window.localStorage.getItem(POST_CACHE_KEY);
+      expect(raw).not.toBeNull();
+      const parsed = JSON.parse(raw as string);
+      expect(parsed.participants.cards[0].nombreParticipante1).toBe("Matias Antunez");
+    });
+  });
+
+  it("persistencia: ante quota excedida reintenta sin guardar las fotos de participantes", async () => {
+    const hugePhoto = `data:image/png;base64,${"x".repeat(12000)}`;
+    window.localStorage.setItem(
+      POST_CACHE_KEY,
+      JSON.stringify({
+        activePostType: "participantes",
+        tournaments: {
+          postType: "torneos",
+          titulo: "TORNEOS AMERICANOS",
+          format: "historia",
+          generos: [],
+          fechaDesde: "",
+          fechaHasta: "",
+          days: [],
+        },
+        loosePlayer: {
+          postType: "jugador_suelto",
+          titulo: "BUSCAMOS JUGADOR",
+          categoria: "C4",
+          buscamos: "Indistinto",
+          categoriaBuscada: "",
+          fecha: "2026-01-01",
+          hora: "13:00",
+          sede: "Roma",
+        },
+        participants: {
+          postType: "participantes",
+          titulo: "PARTICIPANTES DEL TORNEO",
+          cards: [
+            {
+              id: "card-1",
+              fotoDataUrl: hugePhoto,
+              categoria: "C4",
+              nombreParticipante1: "Matias",
+              nombreParticipante2: "Federico",
+              fecha: "2026-01-12",
+              resultado: "campeones",
+              copa: "oro",
+            },
+          ],
+        },
+      }),
+    );
+
+    const originalSetItem = Storage.prototype.setItem;
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === POST_CACHE_KEY && value.includes(hugePhoto)) {
+        throw new DOMException("Quota exceeded", "QuotaExceededError");
+      }
+
+      return originalSetItem.call(this, key, value);
+      });
+
+    render(<PostBuilder />);
+
+    await waitFor(() => {
+      expect(setItemSpy).toHaveBeenCalled();
+      const raw = window.localStorage.getItem(POST_CACHE_KEY);
+      expect(raw).not.toBeNull();
+      const parsed = JSON.parse(raw as string);
+      expect(parsed.participants.cards[0].fotoDataUrl).toBe("");
+      expect(parsed.participants.cards[0].nombreParticipante1).toBe("Matias");
+    });
+  });
+
+  it("persistencia: recupera participantes guardados del navegador", async () => {
+    window.localStorage.setItem(
+      POST_CACHE_KEY,
+      JSON.stringify({
+        activePostType: "participantes",
+        tournaments: {
+          postType: "torneos",
+          titulo: "TORNEOS AMERICANOS",
+          format: "historia",
+          generos: [],
+          fechaDesde: "",
+          fechaHasta: "",
+          days: [],
+        },
+        loosePlayer: {
+          postType: "jugador_suelto",
+          titulo: "BUSCAMOS JUGADOR",
+          categoria: "C4",
+          buscamos: "Indistinto",
+          categoriaBuscada: "",
+          fecha: "2026-01-01",
+          hora: "13:00",
+          sede: "Roma",
+        },
+        participants: {
+          postType: "participantes",
+          titulo: "PARTICIPANTES DEL TORNEO",
+          cards: [
+            {
+              id: "card-1",
+              fotoDataUrl: "data:image/png;base64,test",
+              categoria: "C4",
+              nombreParticipante1: "Matias",
+              nombreParticipante2: "Federico",
+              fecha: "2026-01-12",
+              resultado: "campeones",
+              copa: "oro",
+            },
+          ],
+        },
+      }),
+    );
+
+    render(<PostBuilder />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Participantes" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByLabelText("Participante 1 *")).toHaveValue("Matias");
+      expect(screen.getByLabelText("Participante 2 *")).toHaveValue("Federico");
+    });
+  });
+
   it("muestra 'Descargar todo (ZIP)' cuando hay 2 o más slides", async () => {
     render(<PostBuilder />);
 
