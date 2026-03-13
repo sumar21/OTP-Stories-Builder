@@ -14,6 +14,7 @@ const buildCaptureConfig = (format: PostFormat) => {
     height: size.height,
     canvasWidth: size.width,
     canvasHeight: size.height,
+    backgroundColor: "#0b38d6",
   };
 };
 
