@@ -82,7 +82,7 @@ a {
 }
 
 .slide-header {
-  padding: 52px 48px 28px;
+  padding: 260px 48px 28px;
   flex: 0 0 auto;
 }
 
@@ -109,7 +109,7 @@ a {
 }
 
 .slide-root[data-format="posteo"] .slide-header {
-  padding: 36px 38px 22px;
+  padding: 180px 38px 22px;
 }
 
 .slide-root[data-format="posteo"] .slide-header h1 {
