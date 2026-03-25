@@ -2,6 +2,7 @@ import React from "react";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PostBuilder } from "@/components/PostBuilder";
+import { CATEGORY_OPTIONS_BY_GENDER, LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER } from "@/lib/tournamentOptions";
 
 beforeAll(() => {
   class ResizeObserver {
@@ -76,6 +77,7 @@ describe("PostBuilder", () => {
 
     expect(screen.getByLabelText("Fecha desde")).toHaveValue("");
     expect(screen.getByLabelText("Fecha hasta")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Portada 1" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Caballeros" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "Damas" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "Mixto" })).toHaveAttribute("aria-pressed", "false");
@@ -91,6 +93,69 @@ describe("PostBuilder", () => {
 
     await waitFor(() => {
       expect(screen.getAllByText("MIXTO").length).toBeGreaterThan(0);
+    });
+  });
+
+  it("separa los torneos por género en slides distintas", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Caballeros" }));
+    fireEvent.click(screen.getByRole("button", { name: "Damas" }));
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+    fireEvent.change(await screen.findByLabelText("Etiqueta del día"), { target: { value: "SABADO" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar Damas" }));
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+    fireEvent.change(await screen.findByLabelText("Etiqueta del día"), { target: { value: "DOMINGO" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar Caballeros" }));
+
+    const categoriaSelect = (await screen.findByLabelText("Categoría")) as HTMLSelectElement;
+    fireEvent.change(categoriaSelect, { target: { value: "C4" } });
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(1, 2))).toBeInTheDocument();
+      expect(screen.getAllByText("CABALLEROS").length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getAllByText("Siguiente")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(2, 2))).toBeInTheDocument();
+      expect(screen.getAllByText("DAMAS").length).toBeGreaterThan(0);
+      expect(screen.queryByText(/CABALLEROS Y DAMAS/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it("separa la edición de días y torneos por género", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Caballeros" }));
+    fireEvent.click(screen.getByRole("button", { name: "Damas" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Estás editando los torneos de/i)).toBeInTheDocument();
+      expect(screen.getAllByText("Caballeros").length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Día 1")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar Damas" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Estás editando los torneos de/i)).toBeInTheDocument();
+      expect(screen.getAllByText("Damas").length).toBeGreaterThan(0);
+      expect(screen.queryByText("Día 1")).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Día 1")).toBeInTheDocument();
     });
   });
 
@@ -116,11 +181,12 @@ describe("PostBuilder", () => {
     fireEvent.click(screen.getByRole("button", { name: "Damas" }));
 
     await waitFor(() => {
-      expect(categoriaSelect).toHaveValue("D3");
+      expect(screen.getByLabelText("Categoría")).toHaveValue("D3");
     });
 
-    const options = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
-    expect(options).toEqual(["D3", "D4", "D4/D5", "D6/D7/D8", "D8"]);
+    const updatedCategoriaSelect = screen.getByLabelText("Categoría") as HTMLSelectElement;
+    const options = Array.from(within(updatedCategoriaSelect).getAllByRole("option")).map((option) => option.textContent);
+    expect(options).toEqual([...CATEGORY_OPTIONS_BY_GENDER.Femenino]);
   });
 
   it("paginación cambia slide cuando hay dos días", async () => {
@@ -141,13 +207,83 @@ describe("PostBuilder", () => {
     });
   });
 
-  it("en formato posteo agrega slide final extra", async () => {
+  it("en formato posteo muestra por defecto la portada en preview", async () => {
     render(<PostBuilder />);
 
     fireEvent.click(screen.getByRole("button", { name: /Posteo/i }));
     const addDayButton = screen.getAllByText("+ Agregar día")[0];
     fireEvent.click(addDayButton);
     fireEvent.click(addDayButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(1, 4))).toBeInTheDocument();
+      expect(screen.getAllByText("TORNEO").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("AMERICANO").length).toBeGreaterThan(0);
+    });
+  });
+
+  it("permite cambiar la variante de portada del posteo y mostrarla en preview", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Posteo/i }));
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByText("Siguiente")[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Portada 3" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Portada 3" })).toHaveAttribute("aria-pressed", "true");
+      const raw = window.localStorage.getItem(POST_CACHE_KEY);
+      expect(raw).not.toBeNull();
+      const parsed = JSON.parse(raw as string);
+      expect(parsed.tournaments.coverVariant).toBe("3");
+      expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
+      expect(screen.getAllByText("TORNEO").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("AMERICANO").length).toBeGreaterThan(0);
+    });
+  });
+
+  it("permite volver al primer slide para ver la portada elegida", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Posteo/i }));
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByText("Siguiente")[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Portada 4" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Siguiente/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Anterior/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
+      expect(screen.getAllByText("TORNEO").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("AMERICANO").length).toBeGreaterThan(0);
+    });
+  });
+
+  it("muestra la portada en la tira de preview y permite abrirla directo", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Posteo/i }));
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+
+    const portadaButton = await screen.findByRole("button", { name: "Slide 1: Portada" });
+    expect(portadaButton).toBeInTheDocument();
+
+    fireEvent.click(portadaButton);
 
     await waitFor(() => {
       expect(screen.getByText(slidePattern(1, 3))).toBeInTheDocument();
@@ -221,19 +357,7 @@ describe("PostBuilder", () => {
     });
 
     const caballerosOptions = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
-    expect(caballerosOptions).toEqual([
-      "Seleccionar categoría",
-      "C3",
-      "C4",
-      "C5",
-      "C6",
-      "C7",
-      "C8",
-      "C3/C4",
-      "C5/C6",
-      "C6/C7",
-      "C7/C8",
-    ]);
+    expect(caballerosOptions).toEqual(["Seleccionar categoría", ...LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER.Masculino]);
 
     fireEvent.click(screen.getByRole("button", { name: "Damas" }));
     await waitFor(() => {
@@ -241,19 +365,7 @@ describe("PostBuilder", () => {
     });
 
     const damasOptions = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
-    expect(damasOptions).toEqual([
-      "Seleccionar categoría",
-      "D3",
-      "D4",
-      "D5",
-      "D6",
-      "D7",
-      "D8",
-      "D3/D4",
-      "D5/D6",
-      "D6/D7",
-      "D7/D8",
-    ]);
+    expect(damasOptions).toEqual(["Seleccionar categoría", ...LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER.Femenino]);
 
     fireEvent.click(screen.getByRole("button", { name: "Mixtos" }));
     await waitFor(() => {
@@ -261,19 +373,7 @@ describe("PostBuilder", () => {
     });
 
     const mixtosOptions = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
-    expect(mixtosOptions).toEqual([
-      "Seleccionar categoría",
-      "Suma 7",
-      "Suma 8",
-      "Suma 9",
-      "Suma 10",
-      "Suma 11",
-      "Suma 12",
-      "Suma 13",
-      "Suma 14",
-      "Suma 15",
-      "Suma 16",
-    ]);
+    expect(mixtosOptions).toEqual(["Seleccionar categoría", ...LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER.Mixto]);
   });
 
   it("permite cambiar al modo Participantes y renderiza su formulario", async () => {

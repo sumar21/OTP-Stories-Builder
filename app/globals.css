@@ -108,6 +108,38 @@ a {
   padding: 28px 48px 42px;
 }
 
+.slide-root[data-slide-type="tournaments"][data-format="historia"] {
+  --otp-tournament-text-scale: 0.6666667;
+}
+
+.slide-root[data-slide-type="tournaments"][data-format="historia"] h1 {
+  font-size: calc(62px * var(--otp-tournament-text-scale));
+}
+
+.slide-root[data-slide-type="tournaments"][data-format="historia"] .text-\[40px\] {
+  font-size: calc(40px * var(--otp-tournament-text-scale));
+}
+
+.slide-root[data-slide-type="tournaments"][data-format="historia"] .text-\[56px\] {
+  font-size: calc(56px * var(--otp-tournament-text-scale));
+}
+
+.slide-root[data-slide-type="tournaments"][data-format="historia"] .text-\[73px\] {
+  font-size: calc(73px * var(--otp-tournament-text-scale));
+}
+
+.slide-root[data-slide-type="tournaments"][data-format="historia"] h3 {
+  font-size: calc(54px * var(--otp-tournament-text-scale));
+}
+
+.slide-root[data-slide-type="tournaments"][data-format="historia"] .text-\[42px\] {
+  font-size: calc(42px * var(--otp-tournament-text-scale));
+}
+
+.slide-root[data-slide-type="tournaments"][data-format="historia"] .text-\[31px\] {
+  font-size: calc(31px * var(--otp-tournament-text-scale));
+}
+
 .slide-root[data-format="posteo"] .slide-header {
   padding: 180px 38px 22px;
 }

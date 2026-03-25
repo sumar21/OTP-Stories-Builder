@@ -9,6 +9,7 @@ const makeData = (override?: Partial<TournamentPostData>): TournamentPostData =>
   generos: ["Masculino"],
   fechaDesde: "2026-03-01",
   fechaHasta: "2026-03-07",
+  coverVariant: "1",
   days: [
     {
       id: "d1",

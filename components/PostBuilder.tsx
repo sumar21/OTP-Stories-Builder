@@ -13,8 +13,11 @@ import { computeSlides } from "@/lib/computeSlides";
 import { defaultLoosePlayerPostData, defaultParticipantsPostData, defaultTournamentPostData } from "@/lib/defaultPostData";
 import { getDefaultSponsors } from "@/lib/defaultSponsors";
 import { exportAllSlidesZip, exportCurrentSlidePng } from "@/lib/exportSlides";
+import { TOURNAMENT_COVER_VARIANTS } from "@/lib/tournamentCoverOptions";
+import { getGenderFromCategory, getOrderedGeneros } from "@/lib/tournamentOptions";
 import type {
   DaySlice,
+  Gender,
   LoosePlayerPost,
   LoosePlayerSlideData,
   ParticipantCard,
@@ -39,6 +42,7 @@ const POST_TYPE_VALUES = new Set(["torneos", "jugador_suelto", "participantes"])
 const LOOSE_PLAYER_WANTED_VALUES = new Set(["Dama", "Caballero", "Indistinto"]);
 const PARTICIPANTS_RESULT_VALUES = new Set(["campeones", "subcampeones"]);
 const PARTICIPANTS_CUP_VALUES = new Set(["oro", "plata"]);
+const TOURNAMENT_COVER_VARIANT_VALUES = new Set(TOURNAMENT_COVER_VARIANTS);
 
 type PendingMeasure = {
   id: number;
@@ -85,13 +89,19 @@ const normalizeSponsors = (value: unknown): Sponsor[] => {
   return sponsors.length > 0 ? sponsors : getDefaultSponsors();
 };
 
-const withClosingSlide = (baseSlides: TournamentSlideData[], format: PostFormat): SlideData[] => {
+const withCoverAndClosingSlides = (baseSlides: TournamentSlideData[], format: PostFormat): SlideData[] => {
   if (baseSlides.length === 0) {
     return [];
   }
 
   const slides: SlideData[] = [...baseSlides];
   if (format === "posteo") {
+    slides.unshift({
+      slideIndex: 0,
+      totalSlides: slides.length + 2,
+      type: "cover",
+      days: [],
+    });
     slides.push({
       slideIndex: slides.length,
       totalSlides: slides.length + 1,
@@ -117,6 +127,7 @@ const parseTournamentData = (value: unknown): TournamentPostData | null => {
   const format = value.format;
   const fechaDesde = value.fechaDesde;
   const fechaHasta = value.fechaHasta;
+  const coverVariant = value.coverVariant;
   const days = value.days;
 
   if (!Array.isArray(generos) || !generos.every((item) => typeof item === "string" && GENDER_VALUES.has(item))) {
@@ -136,7 +147,13 @@ const parseTournamentData = (value: unknown): TournamentPostData | null => {
   }
 
   for (const day of days) {
-    if (!isRecord(day) || typeof day.id !== "string" || typeof day.diaLabel !== "string" || !Array.isArray(day.items)) {
+    if (
+      !isRecord(day) ||
+      typeof day.id !== "string" ||
+      typeof day.diaLabel !== "string" ||
+      (typeof day.genero !== "undefined" && (typeof day.genero !== "string" || !GENDER_VALUES.has(day.genero))) ||
+      !Array.isArray(day.items)
+    ) {
       return null;
     }
 
@@ -162,6 +179,10 @@ const parseTournamentData = (value: unknown): TournamentPostData | null => {
     generos,
     fechaDesde,
     fechaHasta,
+    coverVariant:
+      typeof coverVariant === "string" && TOURNAMENT_COVER_VARIANT_VALUES.has(coverVariant as (typeof TOURNAMENT_COVER_VARIANTS)[number])
+        ? (coverVariant as TournamentPostData["coverVariant"])
+        : "1",
     days,
     sponsors: normalizeSponsors(value.sponsors),
   };
@@ -258,6 +279,74 @@ const buildParticipantsSlides = (cards: ParticipantCard[]): ParticipantsSlideDat
     card,
     days: [],
   }));
+};
+
+const filterDaysByGenero = (data: TournamentPostData, genero: Gender) => {
+  return data.days
+    .filter((day) => {
+      if (day.genero) {
+        return day.genero === genero;
+      }
+
+      return day.items.some((item) => getGenderFromCategory(item.categoria) === genero);
+    })
+    .map((day) => ({
+      ...day,
+      items: day.items.filter((item) => getGenderFromCategory(item.categoria) === genero),
+    }))
+    .filter((day) => day.items.length > 0);
+};
+
+const buildTournamentSlides = async (
+  data: TournamentPostData,
+  version: number,
+  measureCandidate: (candidateDays: DaySlice[], version: number, genero?: Gender) => Promise<boolean>,
+): Promise<TournamentSlideData[]> => {
+  const orderedGeneros = data.generos.length > 0 ? getOrderedGeneros(data.generos) : [];
+  const groups =
+    orderedGeneros.length > 0
+      ? orderedGeneros
+          .map((genero) => ({
+            genero,
+            days: filterDaysByGenero(data, genero),
+          }))
+          .filter((group) => group.days.length > 0)
+      : [
+          {
+            genero: undefined,
+            days: data.days,
+          },
+        ];
+
+  if (groups.length === 0) {
+    const fallbackSlides = await computeSlides(data, (candidateDays) => measureCandidate(candidateDays, version));
+    return fallbackSlides.map((slide) => ({
+      ...slide,
+      genero: orderedGeneros.length === 1 ? orderedGeneros[0] : undefined,
+    }));
+  }
+
+  const groupedSlides: TournamentSlideData[] = [];
+
+  for (const group of groups) {
+    const slidesForGenero = await computeSlides(
+      {
+        ...data,
+        generos: group.genero ? [group.genero] : data.generos,
+        days: group.days,
+      },
+      (candidateDays) => measureCandidate(candidateDays, version, group.genero),
+    );
+
+    groupedSlides.push(
+      ...slidesForGenero.map((slide) => ({
+        ...slide,
+        genero: group.genero,
+      })),
+    );
+  }
+
+  return groupedSlides;
 };
 
 const buildCacheState = (state: BuilderState, options?: { stripParticipantPhotos?: boolean }): BuilderState => ({
@@ -409,6 +498,14 @@ export function PostBuilder() {
   }, [state.activePostType]);
 
   useEffect(() => {
+    if (state.activePostType !== "torneos" || state.tournaments.format !== "posteo") {
+      return;
+    }
+
+    setCurrentSlide(0);
+  }, [state.activePostType, state.tournaments.format, state.tournaments.coverVariant]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
@@ -441,7 +538,7 @@ export function PostBuilder() {
     };
   }, []);
 
-  const measureCandidate = useCallback((candidateDays: DaySlice[], version: number) => {
+  const measureCandidate = useCallback((candidateDays: DaySlice[], version: number, genero?: Gender) => {
     return new Promise<boolean>((resolve) => {
       const nextId = requestSeqRef.current + 1;
       requestSeqRef.current = nextId;
@@ -456,6 +553,7 @@ export function PostBuilder() {
         id: nextId,
         version,
         candidateDays,
+        genero,
       });
     });
   }, []);
@@ -518,12 +616,12 @@ export function PostBuilder() {
     }
 
     const run = async () => {
-      const nextSlides = await computeSlides(debouncedActiveData, (candidateDays) => measureCandidate(candidateDays, version));
+      const nextSlides = await buildTournamentSlides(debouncedActiveData, version, measureCandidate);
       if (cancelled || computeVersionRef.current !== version) {
         return;
       }
 
-      const nextSlidesWithClosing = withClosingSlide(nextSlides, debouncedActiveData.format);
+      const nextSlidesWithClosing = withCoverAndClosingSlides(nextSlides, debouncedActiveData.format);
       setSlides(nextSlidesWithClosing);
       setCurrentSlide((previous) => Math.min(previous, Math.max(nextSlidesWithClosing.length - 1, 0)));
     };

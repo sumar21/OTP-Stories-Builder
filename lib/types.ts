@@ -6,6 +6,7 @@ export type PostType = "torneos" | "jugador_suelto" | "participantes";
 export type LoosePlayerWanted = "Dama" | "Caballero" | "Indistinto";
 export type ParticipantsResult = "campeones" | "subcampeones";
 export type ParticipantsCup = "oro" | "plata";
+export type TournamentCoverVariant = "1" | "2" | "3" | "4";
 
 export type Sponsor = {
   id: string;
@@ -23,6 +24,7 @@ export type TournamentItem = {
 
 export type DayBlock = {
   id: string;
+  genero?: Gender;
   diaLabel: string;
   items: TournamentItem[];
 };
@@ -34,6 +36,7 @@ export type TournamentPostData = {
   generos: Gender[];
   fechaDesde: string;
   fechaHasta: string;
+  coverVariant: TournamentCoverVariant;
   days: DayBlock[];
   sponsors: Sponsor[];
 };
@@ -83,8 +86,9 @@ export type DaySlice = {
 export type TournamentSlideData = {
   slideIndex: number;
   totalSlides: number;
-  type: "tournaments" | "closing";
+  type: "cover" | "tournaments" | "closing";
   days: DaySlice[];
+  genero?: Gender;
 };
 
 export type LoosePlayerSlideData = {

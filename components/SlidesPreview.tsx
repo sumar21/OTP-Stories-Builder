@@ -16,6 +16,27 @@ type SlidesPreviewProps = {
 const PREVIEW_TARGET_WIDTH = 395;
 const PREVIEW_TARGET_WIDTH_MOBILE = 320;
 const PREVIEW_FRAME_PADDING = 12;
+const THUMBNAIL_WIDTH = 84;
+
+const getSlideNavLabel = (slide: SlideData, index: number): string => {
+  if (slide.type === "cover") {
+    return "Portada";
+  }
+  if (slide.type === "closing") {
+    return "Cierre";
+  }
+  return `${index + 1}`;
+};
+
+const getSlideAriaLabel = (slide: SlideData, index: number): string => {
+  if (slide.type === "cover") {
+    return "Slide 1: Portada";
+  }
+  if (slide.type === "closing") {
+    return `Slide ${index + 1}: Cierre`;
+  }
+  return `Slide ${index + 1}`;
+};
 
 export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resizeSignal }: SlidesPreviewProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -56,6 +77,8 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
   const slideSize = useMemo(() => getSlideSize(getPostFormat(data)), [data]);
   const previewHeight = (previewWidth * slideSize.height) / slideSize.width;
   const scale = previewWidth / slideSize.width;
+  const thumbnailHeight = (THUMBNAIL_WIDTH * slideSize.height) / slideSize.width;
+  const thumbnailScale = THUMBNAIL_WIDTH / slideSize.width;
 
   const activeSlide = useMemo(() => slides[currentSlide] ?? slides[0], [slides, currentSlide]);
 
@@ -113,6 +136,48 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
           </div>
         </div>
       </div>
+
+      {slides.length > 1 ? (
+        <div className="otp-scrollbar flex gap-3 overflow-x-auto pb-1">
+          {slides.map((slide, index) => {
+            const isActive = index === currentSlide;
+
+            return (
+              <button
+                key={`preview-thumb-${slide.slideIndex}`}
+                type="button"
+                aria-label={getSlideAriaLabel(slide, index)}
+                aria-pressed={isActive}
+                onClick={() => onChangeSlide(index)}
+                className={`shrink-0 rounded-2xl border p-2 text-left transition ${
+                  isActive
+                    ? "border-[var(--otp-lime)] bg-[var(--otp-lime)]/12 shadow-[0_0_0_1px_rgba(208,255,81,0.6)]"
+                    : "border-white/15 bg-white/6 hover:bg-white/10"
+                }`}
+              >
+                <div
+                  className="relative overflow-hidden rounded-xl border border-white/10 bg-[#04186c]"
+                  style={{ width: THUMBNAIL_WIDTH, height: thumbnailHeight }}
+                >
+                  <div
+                    className="pointer-events-none absolute left-0 top-0"
+                    style={{
+                      width: slideSize.width,
+                      height: slideSize.height,
+                      transform: `scale(${thumbnailScale})`,
+                      transformOrigin: "top left",
+                    }}
+                  >
+                    <SlideRenderer data={data} slide={slide} />
+                  </div>
+                </div>
+
+                <p className="mt-2 text-center text-[11px] font-semibold text-white/80">{getSlideNavLabel(slide, index)}</p>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }

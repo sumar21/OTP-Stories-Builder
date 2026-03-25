@@ -27,13 +27,21 @@ export type CategoryOptionGroup = {
   options: string[];
 };
 
-const getOrderedGeneros = (generos: Gender[]): Gender[] => {
+const CATEGORY_TO_GENDER = new Map<string, Gender>(
+  CATEGORY_GROUP_ORDER.flatMap((genero) => CATEGORY_OPTIONS_BY_GENDER[genero].map((categoria) => [categoria, genero] as const)),
+);
+
+export const getOrderedGeneros = (generos: Gender[]): Gender[] => {
   if (generos.length === 0) {
     return [...CATEGORY_GROUP_ORDER];
   }
 
   const selectedGeneros = new Set(generos);
   return CATEGORY_GROUP_ORDER.filter((genero) => selectedGeneros.has(genero));
+};
+
+export const getGenderFromCategory = (category: string): Gender | undefined => {
+  return CATEGORY_TO_GENDER.get(category.trim());
 };
 
 export const getCategoryOptionsForGeneros = (generos: Gender[]): string[] => {

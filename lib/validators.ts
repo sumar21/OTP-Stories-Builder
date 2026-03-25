@@ -1,4 +1,28 @@
-import type { LoosePlayerPost, ParticipantsPost, PostData, TournamentPostData, ValidationError } from "@/lib/types";
+import { getGenderFromCategory } from "@/lib/tournamentOptions";
+import type { DayBlock, Gender, LoosePlayerPost, ParticipantsPost, PostData, TournamentPostData, ValidationError } from "@/lib/types";
+
+const resolveDayGenero = (day: DayBlock): Gender | undefined => {
+  if (day.genero) {
+    return day.genero;
+  }
+
+  const itemGeneros = Array.from(
+    new Set(day.items.map((item) => getGenderFromCategory(item.categoria)).filter((genero): genero is Gender => Boolean(genero))),
+  );
+
+  return itemGeneros.length === 1 ? itemGeneros[0] : undefined;
+};
+
+const getRelevantDays = (data: TournamentPostData): DayBlock[] => {
+  if (data.generos.length === 0) {
+    return data.days;
+  }
+
+  return data.days.filter((day) => {
+    const genero = resolveDayGenero(day);
+    return genero ? data.generos.includes(genero) : true;
+  });
+};
 
 const validateSponsors = (errors: ValidationError[], sponsors: { logoDataUrl: string; name: string }[], pathPrefix: string) => {
   sponsors.forEach((sponsor, index) => {
@@ -20,16 +44,17 @@ const validateSponsors = (errors: ValidationError[], sponsors: { logoDataUrl: st
 
 const validateTournamentsData = (data: TournamentPostData): ValidationError[] => {
   const errors: ValidationError[] = [];
+  const relevantDays = getRelevantDays(data);
 
   if (data.generos.length === 0) {
     errors.push({ path: "generos", message: "Seleccioná al menos un género." });
   }
 
-  if (data.days.length === 0) {
+  if (relevantDays.length === 0) {
     errors.push({ path: "days", message: "Agregá al menos un día." });
   }
 
-  data.days.forEach((day, dayIndex) => {
+  relevantDays.forEach((day, dayIndex) => {
     if (!day.diaLabel.trim()) {
       errors.push({
         path: `days.${dayIndex}.diaLabel`,

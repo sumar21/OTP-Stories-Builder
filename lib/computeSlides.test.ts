@@ -17,6 +17,7 @@ const makeData = (days: { id: string; label: string; count: number }[]): Tournam
   generos: ["Masculino"],
   fechaDesde: "02/03",
   fechaHasta: "08/03",
+  coverVariant: "1",
   days: days.map((day) => ({
     id: day.id,
     diaLabel: day.label,

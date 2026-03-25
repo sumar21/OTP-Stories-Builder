@@ -2,12 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { SlideRenderer } from "@/components/SlideRenderer";
-import type { DaySlice, TournamentPostData, TournamentSlideData } from "@/lib/types";
+import type { DaySlice, Gender, TournamentPostData, TournamentSlideData } from "@/lib/types";
 
 export type SlideMeasureRequest = {
   id: number;
   version: number;
   candidateDays: DaySlice[];
+  genero?: Gender;
 };
 
 type SlideMeasurerProps = {
@@ -42,11 +43,16 @@ export function SlideMeasurer({ data, request, onMeasured }: SlideMeasurerProps)
     };
   }, [request, onMeasured]);
 
+  if (!request) {
+    return null;
+  }
+
   const measureSlide: TournamentSlideData = {
     slideIndex: 0,
     totalSlides: 1,
     type: "tournaments",
-    days: request?.candidateDays ?? [],
+    days: request.candidateDays,
+    genero: request.genero,
   };
 
   return (

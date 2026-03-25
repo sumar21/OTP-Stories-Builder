@@ -9,6 +9,7 @@ export const defaultTournamentPostData = (): TournamentPostData => ({
   generos: [],
   fechaDesde: "",
   fechaHasta: "",
+  coverVariant: "1",
   days: [],
   sponsors: getDefaultSponsors(),
 });
