@@ -376,7 +376,7 @@ describe("PostBuilder", () => {
     expect(mixtosOptions).toEqual(["Seleccionar categoría", ...LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER.Mixto]);
   });
 
-  it("en Jugador Suelto muestra WPC Nordelta entre las sedes disponibles", async () => {
+  it("en Jugador Suelto muestra WPC Nordelta y ya no ofrece WPC", async () => {
     render(<PostBuilder />);
     fireEvent.click(screen.getByRole("button", { name: "Jugador Suelto" }));
 
@@ -385,6 +385,54 @@ describe("PostBuilder", () => {
 
     expect(sedeOptions).toEqual(["Seleccionar sede", ...VENUE_OPTIONS]);
     expect(sedeOptions).toContain("WPC Nordelta");
+    expect(sedeOptions).not.toContain("WPC");
+  });
+
+  it("migracion: reemplaza WPC por WPC Nordelta al recuperar el cache de Jugador Suelto", async () => {
+    window.localStorage.setItem(
+      POST_CACHE_KEY,
+      JSON.stringify({
+        activePostType: "jugador_suelto",
+        tournaments: {
+          postType: "torneos",
+          titulo: "TORNEOS AMERICANOS",
+          format: "historia",
+          generos: [],
+          fechaDesde: "",
+          fechaHasta: "",
+          days: [],
+        },
+        loosePlayer: {
+          postType: "jugador_suelto",
+          titulo: "BUSCAMOS JUGADOR",
+          categoria: "C4",
+          buscamos: "Indistinto",
+          categoriaBuscada: "",
+          fecha: "2026-01-01",
+          hora: "13:00",
+          sede: "WPC",
+        },
+        participants: {
+          postType: "participantes",
+          titulo: "PARTICIPANTES DEL TORNEO",
+          cards: [],
+        },
+      }),
+    );
+
+    render(<PostBuilder />);
+
+    const sedeSelect = (await screen.findByLabelText("Sede *")) as HTMLSelectElement;
+    await waitFor(() => {
+      expect(sedeSelect).toHaveValue("WPC Nordelta");
+    });
+
+    await waitFor(() => {
+      const raw = window.localStorage.getItem(POST_CACHE_KEY);
+      expect(raw).not.toBeNull();
+      const parsed = JSON.parse(raw as string);
+      expect(parsed.loosePlayer.sede).toBe("WPC Nordelta");
+    });
   });
 
   it("permite cambiar al modo Participantes y renderiza su formulario", async () => {

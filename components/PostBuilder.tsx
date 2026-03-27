@@ -63,6 +63,10 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
+const normalizeLoosePlayerVenue = (venue: string): string => {
+  return venue === "WPC" ? "WPC Nordelta" : venue;
+};
+
 const normalizeSponsors = (value: unknown): Sponsor[] => {
   if (!Array.isArray(value)) {
     return getDefaultSponsors();
@@ -223,7 +227,7 @@ const parseLoosePlayerData = (value: unknown): LoosePlayerPost | null => {
     categoriaBuscada: typeof value.categoriaBuscada === "string" ? value.categoriaBuscada : "",
     fecha: value.fecha,
     hora: value.hora,
-    sede: value.sede,
+    sede: normalizeLoosePlayerVenue(value.sede),
     mano: value.mano as LoosePlayerPost["mano"],
   };
 };
@@ -492,6 +496,20 @@ export function PostBuilder() {
 
     persistBuilderState(state);
   }, [cacheReady, state]);
+
+  useEffect(() => {
+    if (state.loosePlayer.sede !== "WPC") {
+      return;
+    }
+
+    setState((previous) => ({
+      ...previous,
+      loosePlayer: {
+        ...previous.loosePlayer,
+        sede: normalizeLoosePlayerVenue(previous.loosePlayer.sede),
+      },
+    }));
+  }, [state.loosePlayer.sede]);
 
   useEffect(() => {
     setCurrentSlide(0);

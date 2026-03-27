@@ -77,7 +77,6 @@ export const VENUE_OPTIONS = [
   "El garage",
   "Roma",
   "Roma II",
-  "WPC",
   "WPC Nordelta",
   "Araoz P.P",
   "Backyard",
