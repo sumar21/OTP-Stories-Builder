@@ -78,6 +78,7 @@ export const VENUE_OPTIONS = [
   "Roma",
   "Roma II",
   "WPC",
+  "WPC Nordelta",
   "Araoz P.P",
   "Backyard",
 ] as const;

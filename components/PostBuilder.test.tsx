@@ -2,7 +2,7 @@ import React from "react";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PostBuilder } from "@/components/PostBuilder";
-import { CATEGORY_OPTIONS_BY_GENDER, LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER } from "@/lib/tournamentOptions";
+import { CATEGORY_OPTIONS_BY_GENDER, LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER, VENUE_OPTIONS } from "@/lib/tournamentOptions";
 
 beforeAll(() => {
   class ResizeObserver {
@@ -374,6 +374,17 @@ describe("PostBuilder", () => {
 
     const mixtosOptions = Array.from(within(categoriaSelect).getAllByRole("option")).map((option) => option.textContent);
     expect(mixtosOptions).toEqual(["Seleccionar categoría", ...LOOSE_PLAYER_CATEGORY_OPTIONS_BY_GENDER.Mixto]);
+  });
+
+  it("en Jugador Suelto muestra WPC Nordelta entre las sedes disponibles", async () => {
+    render(<PostBuilder />);
+    fireEvent.click(screen.getByRole("button", { name: "Jugador Suelto" }));
+
+    const sedeSelect = (await screen.findByLabelText("Sede *")) as HTMLSelectElement;
+    const sedeOptions = Array.from(within(sedeSelect).getAllByRole("option")).map((option) => option.textContent);
+
+    expect(sedeOptions).toEqual(["Seleccionar sede", ...VENUE_OPTIONS]);
+    expect(sedeOptions).toContain("WPC Nordelta");
   });
 
   it("permite cambiar al modo Participantes y renderiza su formulario", async () => {
