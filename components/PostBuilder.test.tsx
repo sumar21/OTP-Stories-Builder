@@ -189,6 +189,18 @@ describe("PostBuilder", () => {
     expect(options).toEqual([...CATEGORY_OPTIONS_BY_GENDER.Femenino]);
   });
 
+  it("en Torneos ofrece la nueva sede 15CERO", async () => {
+    render(<PostBuilder />);
+
+    fireEvent.click(screen.getAllByText("+ Agregar día")[0]);
+
+    const lugarSelect = (await screen.findByLabelText("Lugar")) as HTMLSelectElement;
+    const lugarOptions = Array.from(within(lugarSelect).getAllByRole("option")).map((option) => option.textContent);
+
+    expect(lugarOptions).toEqual(VENUE_OPTIONS.map((venue) => venue));
+    expect(lugarOptions).toContain("15CERO");
+  });
+
   it("paginación cambia slide cuando hay dos días", async () => {
     render(<PostBuilder />);
 
@@ -384,6 +396,7 @@ describe("PostBuilder", () => {
     const sedeOptions = Array.from(within(sedeSelect).getAllByRole("option")).map((option) => option.textContent);
 
     expect(sedeOptions).toEqual(["Seleccionar sede", ...VENUE_OPTIONS]);
+    expect(sedeOptions).toContain("15CERO");
     expect(sedeOptions).toContain("WPC Nordelta");
     expect(sedeOptions).not.toContain("WPC");
   });

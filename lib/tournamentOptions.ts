@@ -80,6 +80,7 @@ export const VENUE_OPTIONS = [
   "WPC Nordelta",
   "Araoz P.P",
   "Backyard",
+  "15CERO",
 ] as const;
 
 export const WEEKDAY_OPTIONS = [
