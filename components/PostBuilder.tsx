@@ -839,8 +839,8 @@ export function PostBuilder() {
                 aria-pressed={state.activePostType === "torneos"}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
                   state.activePostType === "torneos"
-                    ? "border border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)]"
-                    : "border border-white/20 bg-white/5 text-white"
+                    ? "border border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)] shadow-[0_10px_24px_rgba(201,253,46,0.22)]"
+                    : "border border-white/15 bg-white/[0.06] text-white/90 hover:bg-white/[0.1]"
                 }`}
               >
                 Torneos Americanos
@@ -851,8 +851,8 @@ export function PostBuilder() {
                 aria-pressed={state.activePostType === "jugador_suelto"}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
                   state.activePostType === "jugador_suelto"
-                    ? "border border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)]"
-                    : "border border-white/20 bg-white/5 text-white"
+                    ? "border border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)] shadow-[0_10px_24px_rgba(201,253,46,0.22)]"
+                    : "border border-white/15 bg-white/[0.06] text-white/90 hover:bg-white/[0.1]"
                 }`}
               >
                 Jugador Suelto
@@ -863,8 +863,8 @@ export function PostBuilder() {
                 aria-pressed={state.activePostType === "participantes"}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
                   state.activePostType === "participantes"
-                    ? "border border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)]"
-                    : "border border-white/20 bg-white/5 text-white"
+                    ? "border border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)] shadow-[0_10px_24px_rgba(201,253,46,0.22)]"
+                    : "border border-white/15 bg-white/[0.06] text-white/90 hover:bg-white/[0.1]"
                 }`}
               >
                 Participantes

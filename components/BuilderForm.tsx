@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Mars, Venus, VenusAndMars } from "lucide-react";
+import { CalendarPlus, Mars, Venus, VenusAndMars } from "lucide-react";
 import { nanoid } from "nanoid";
 import { DayEditor } from "@/components/DayEditor";
 import { SponsorsUploader } from "@/components/SponsorsUploader";
@@ -188,6 +188,7 @@ const replaceGeneroDays = (days: DayBlock[], genero: Gender, nextGeneroDays: Day
 };
 
 export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProps) {
+  const errorPaths = useMemo(() => new Set(errors.map((e) => e.path)), [errors]);
   const selectedGeneros = useMemo(() => (data.generos.length > 0 ? getOrderedGeneros(data.generos) : []), [data.generos]);
   const categoryOptions = useMemo(() => getCategoryOptionsForGeneros(data.generos), [data.generos]);
   const [editingGenero, setEditingGenero] = useState<Gender | null>(selectedGeneros[0] ?? null);
@@ -353,12 +354,12 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
                     onClick={() => updateTopField("format", option.value)}
                     className={`flex flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left font-semibold transition ${
                       isSelected
-                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)]/25 text-white shadow-[0_0_0_1px_rgba(208,255,81,0.65)]"
-                        : "border-white/20 bg-white/5 text-white/90 hover:bg-white/10"
+                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)] shadow-[0_10px_24px_rgba(201,253,46,0.22)]"
+                        : "border-white/15 bg-white/[0.06] text-white/90 hover:bg-white/[0.1]"
                     }`}
                   >
                     <span className="text-sm font-semibold uppercase">{option.label}</span>
-                    <span className="text-xs text-white/75">{option.description}</span>
+                    <span className={`text-xs ${isSelected ? "text-[var(--otp-blue)]/70" : "text-white/75"}`}>{option.description}</span>
                   </button>
                 );
               })}
@@ -378,8 +379,8 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
                     onClick={() => toggleGenero(value, !isSelected)}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                       isSelected
-                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[#0f1216] shadow-[0_0_0_1px_rgba(208,255,81,0.65)]"
-                        : "border-[var(--otp-lime)]/65 bg-[var(--otp-lime)]/75 text-[#1c220b] hover:bg-[var(--otp-lime)]/90"
+                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)] shadow-[0_10px_24px_rgba(201,253,46,0.22)]"
+                        : "border-white/15 bg-white/[0.06] text-white/90 hover:bg-white/[0.1]"
                     }`}
                   >
                     <Icon className="size-4" aria-hidden="true" />
@@ -412,14 +413,9 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
             </label>
           </div>
 
-          <fieldset className="m-0 min-w-0 border-0 bg-transparent p-0">
+          {data.format === "posteo" ? <fieldset className="m-0 min-w-0 border-0 bg-transparent p-0">
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-semibold text-white/80">Portada del carrusel</p>
-              {data.format !== "posteo" ? (
-                <span className="rounded-full border border-white/15 bg-white/8 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-white/60 uppercase">
-                  Solo en posteo
-                </span>
-              ) : null}
             </div>
             <p className="mt-1 text-xs text-white/60">Se agrega como primera pantalla del carrusel de torneos americanos.</p>
 
@@ -456,7 +452,7 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
                 );
               })}
             </div>
-          </fieldset>
+          </fieldset> : null}
 
         </div>
       </section>
@@ -508,7 +504,9 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
         ) : null}
 
         <div className="space-y-3">
-          {visibleDays.map((day, dayIndex) => (
+          {visibleDays.map((day, dayIndex) => {
+            const realDayIndex = data.days.indexOf(day);
+            return (
             <DayEditor
               key={day.id}
               day={day}
@@ -525,14 +523,28 @@ export function BuilderForm({ data, onChange, onReset, errors }: BuilderFormProp
               onMoveTournamentDown={(itemId) => moveTournament(day.id, itemId, "down")}
               showStatus={data.format === "historia"}
               categoryOptionGroups={categoryOptionGroups}
+              hasLabelError={errorPaths.has(`days.${realDayIndex}.diaLabel`)}
+              itemErrorPaths={errorPaths}
+              realDayIndex={realDayIndex}
             />
-          ))}
+          );
+          })}
 
           {visibleDays.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-white/20 bg-white/5 px-4 py-5 text-sm text-white/65">
-              {currentGeneroLabel
-                ? `Todavía no cargaste días para ${currentGeneroLabel}.`
-                : "Todavía no cargaste días para este torneo."}
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-white/20 bg-white/5 px-4 py-8 text-center">
+              <CalendarPlus className="size-8 text-white/40" />
+              <p className="text-sm text-white/65">
+                {currentGeneroLabel
+                  ? `Todavía no cargaste días para ${currentGeneroLabel}.`
+                  : "Todavía no cargaste días para este torneo."}
+              </p>
+              <button
+                type="button"
+                onClick={addDay}
+                className="rounded-lg border border-[var(--otp-lime)] bg-[var(--otp-lime)] px-4 py-2 text-sm font-semibold text-[var(--otp-blue)]"
+              >
+                + Agregar día
+              </button>
             </div>
           ) : null}
         </div>

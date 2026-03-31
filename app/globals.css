@@ -82,7 +82,7 @@ a {
 }
 
 .slide-header {
-  padding: 260px 48px 28px;
+  padding: 120px 48px 28px;
   flex: 0 0 auto;
 }
 
@@ -101,6 +101,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding-bottom: 120px;
 }
 
 .slide-footer {
@@ -141,7 +142,7 @@ a {
 }
 
 .slide-root[data-format="posteo"] .slide-header {
-  padding: 180px 38px 22px;
+  padding: 100px 38px 22px;
 }
 
 .slide-root[data-format="posteo"] .slide-header h1 {
@@ -153,14 +154,15 @@ a {
 }
 
 .slide-root[data-format="posteo"] .slide-header .text-\[73px\] {
-  font-size: 52px;
+  font-size: 42px;
 }
 
 .slide-root[data-format="posteo"] .slide-header img {
-  width: 130px;
-  height: 130px;
-  padding-top: 28px;
+  width: 160px;
+  height: 160px;
+  padding-top: 0;
 }
+
 
 .slide-root[data-format="posteo"] .slide-body {
   padding: 0 38px;

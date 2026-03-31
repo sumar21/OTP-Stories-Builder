@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { ArrowDown, ArrowUp, CalendarDays, ImagePlus, Medal, Trash2, Trophy } from "lucide-react";
 import { CATEGORY_OPTIONS } from "@/lib/tournamentOptions";
 import { buildDefaultParticipantCard } from "@/lib/defaultPostData";
@@ -52,6 +53,7 @@ const controlTitleClass = "inline-flex items-center gap-2 text-[13px] font-semib
 const controlHintClass = "mt-1.5 text-[11px] leading-[1.4] text-white/58";
 
 export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: ParticipantsBuilderFormProps) {
+  const errorPaths = useMemo(() => new Set(errors.map((e) => e.path)), [errors]);
   const updateCards = (updater: (cards: ParticipantCard[]) => ParticipantCard[]) => {
     onChange({ ...data, cards: updater(data.cards) });
   };
@@ -163,7 +165,7 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
               <div className="grid min-w-0 gap-4">
                 <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
                   <div className="rounded-2xl border border-white/12 bg-white/[0.06] p-3">
-                    <div className="relative h-[150px] overflow-hidden rounded-xl bg-[#08227a]">
+                    <div className={`relative h-[150px] overflow-hidden rounded-xl bg-[#08227a] ${errorPaths.has(`cards.${cardIndex}.fotoDataUrl`) ? "ring-2 ring-red-400/60" : ""}`}>
                       {card.fotoDataUrl ? (
                         <img src={card.fotoDataUrl} alt={`Foto tarjeta ${cardIndex + 1}`} className="size-full object-cover" />
                       ) : (
@@ -191,7 +193,7 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                       <select
                         value={card.categoria}
                         onChange={(event) => updateCard(card.id, { categoria: event.target.value })}
-                        className="h-[52px] rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)]"
+                        className={`h-[52px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.categoria`) ? "border-red-400/60" : "border-white/15"}`}
                       >
                         <option value="" className="text-black">
                           Seleccionar categoría
@@ -211,7 +213,7 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                           type="text"
                           value={card.nombreParticipante1}
                           onChange={(event) => updateCard(card.id, { nombreParticipante1: event.target.value })}
-                          className="h-[52px] rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)]"
+                          className={`h-[52px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.nombreParticipante1`) ? "border-red-400/60" : "border-white/15"}`}
                         />
                       </label>
                       <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
@@ -220,7 +222,7 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                           type="text"
                           value={card.nombreParticipante2}
                           onChange={(event) => updateCard(card.id, { nombreParticipante2: event.target.value })}
-                          className="h-[52px] rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)]"
+                          className={`h-[52px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.nombreParticipante2`) ? "border-red-400/60" : "border-white/15"}`}
                         />
                       </label>
                     </div>
@@ -238,7 +240,7 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                       type="date"
                       value={card.fecha}
                       onChange={(event) => updateCard(card.id, { fecha: event.target.value })}
-                      className="mt-3 h-[52px] rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)]"
+                      className={`mt-3 h-[52px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.fecha`) ? "border-red-400/60" : "border-white/15"}`}
                     />
                   </label>
 

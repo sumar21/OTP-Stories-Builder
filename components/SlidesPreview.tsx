@@ -131,7 +131,7 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
                 transformOrigin: "top left",
               }}
             >
-              <SlideRenderer data={data} slide={activeSlide} />
+              <SlideRenderer data={data} slide={activeSlide} className="slides-preview-render" />
             </div>
           </div>
         </div>
@@ -168,7 +168,7 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
                       transformOrigin: "top left",
                     }}
                   >
-                    <SlideRenderer data={data} slide={slide} />
+                    <SlideRenderer data={data} slide={slide} className="slides-preview-render" />
                   </div>
                 </div>
 

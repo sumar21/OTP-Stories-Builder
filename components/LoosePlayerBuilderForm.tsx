@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeftCircle, ArrowRightCircle, Mars, Shuffle, Venus, VenusAndMars } from "lucide-react";
 import {
@@ -49,6 +50,7 @@ const resolveGeneroFromCategory = (categoria: string): Gender | null => {
 };
 
 export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: LoosePlayerBuilderFormProps) {
+  const errorPaths = useMemo(() => new Set(errors.map((e) => e.path)), [errors]);
   const updateField = <K extends keyof LoosePlayerPost>(field: K, value: LoosePlayerPost[K]) => {
     onChange({ ...data, [field]: value });
   };
@@ -101,8 +103,8 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
                     onClick={() => selectGenero(value)}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                       isSelected
-                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[#0f1216] shadow-[0_0_0_1px_rgba(208,255,81,0.65)]"
-                        : "border-[var(--otp-lime)]/65 bg-[var(--otp-lime)]/75 text-[#1c220b] hover:bg-[var(--otp-lime)]/90"
+                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)] shadow-[0_10px_24px_rgba(201,253,46,0.22)]"
+                        : "border-white/15 bg-white/[0.06] text-white/90 hover:bg-white/[0.1]"
                     }`}
                   >
                     <Icon className="size-4" aria-hidden="true" />
@@ -119,7 +121,7 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
               value={data.categoria}
               onChange={(event) => updateField("categoria", event.target.value)}
               required
-              className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)]"
+              className={`rounded-lg border bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)] ${errorPaths.has("categoria") ? "border-red-400/60" : "border-white/15"}`}
             >
               <option value="" className="text-black">
                 Seleccionar categoría
@@ -165,8 +167,8 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
                         }}
                         className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                           isSelected
-                            ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)]"
-                            : "border-white/20 bg-white/5 text-white/90 hover:bg-white/10"
+                            ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)] shadow-[0_10px_24px_rgba(201,253,46,0.22)]"
+                            : "border-white/15 bg-white/[0.06] text-white/90 hover:bg-white/[0.1]"
                         }`}
                       >
                         <Icon className="size-4" aria-hidden="true" />
@@ -209,7 +211,7 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
                 value={data.fecha}
                 onChange={(event) => updateField("fecha", event.target.value)}
                 required
-                className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)]"
+                className={`rounded-lg border bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)] ${errorPaths.has("fecha") ? "border-red-400/60" : "border-white/15"}`}
               />
             </label>
 
@@ -220,7 +222,7 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
                 value={data.hora}
                 onChange={(event) => updateField("hora", event.target.value)}
                 required
-                className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)]"
+                className={`rounded-lg border bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)] ${errorPaths.has("hora") ? "border-red-400/60" : "border-white/15"}`}
               />
             </label>
           </div>
@@ -231,7 +233,7 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
               value={data.sede}
               onChange={(event) => updateField("sede", event.target.value)}
               required
-              className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)]"
+              className={`rounded-lg border bg-white/10 px-3 py-2 text-sm text-white outline-none focus:border-[var(--otp-lime)] ${errorPaths.has("sede") ? "border-red-400/60" : "border-white/15"}`}
             >
               <option value="" className="text-black">
                 Seleccionar sede
@@ -257,8 +259,8 @@ export function LoosePlayerBuilderForm({ data, onChange, onReset, errors }: Loos
                     onClick={() => updateField("mano", isSelected ? undefined : value)}
                     className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                       isSelected
-                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)]"
-                        : "border-white/20 bg-white/5 text-white/90 hover:bg-white/10"
+                        ? "border-[var(--otp-lime)] bg-[var(--otp-lime)] text-[var(--otp-blue)] shadow-[0_10px_24px_rgba(201,253,46,0.22)]"
+                        : "border-white/15 bg-white/[0.06] text-white/90 hover:bg-white/[0.1]"
                     }`}
                   >
                     <Icon className="size-4" />

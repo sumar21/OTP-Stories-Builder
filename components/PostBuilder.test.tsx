@@ -77,7 +77,7 @@ describe("PostBuilder", () => {
 
     expect(screen.getByLabelText("Fecha desde")).toHaveValue("");
     expect(screen.getByLabelText("Fecha hasta")).toHaveValue("");
-    expect(screen.getByRole("button", { name: "Portada 1" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: "Portada 1" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Caballeros" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "Damas" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "Mixto" })).toHaveAttribute("aria-pressed", "false");

@@ -49,7 +49,7 @@ const GENDER_BADGE_LABELS: Record<Gender, string> = {
 };
 
 const DayCard = ({ day, showStatus }: { day: DaySlice; showStatus: boolean }) => (
-  <article className="rounded-[46px] border border-[#2f53cb] bg-[var(--otp-card)] px-8 py-7">
+  <article className="rounded-[46px] border border-[#2f53cb] bg-[var(--otp-card)] px-[20px] pt-[30px] pb-0">
     <h3 className="mb-4 flex items-center gap-2 text-[54px] leading-[1] font-bold tracking-tight text-[#f2f4ff]">
       <span>{day.diaLabel}</span>
       <span className="text-[var(--otp-lime)]">—</span>
@@ -246,13 +246,13 @@ export function SlideRenderer({ data, slide, slideRef, className, style }: Slide
       data-slide-type="tournaments"
     >
       <header className="slide-header">
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex items-center justify-between gap-6">
           <div className="min-w-0 flex-1">
             <h1 className="whitespace-nowrap text-[62px] leading-none font-semibold uppercase tracking-tight text-[#f2f4ff]">
               TORNEOS <span className="font-extrabold">AMERICANOS</span>
             </h1>
 
-            <div className="mt-4 flex flex-wrap items-center gap-4">
+            <div className="mt-4 flex flex-nowrap items-center gap-4">
               <span
                 className={clsx(
                   "inline-flex rounded-full bg-[var(--otp-lime)] px-7 py-2 leading-none font-bold text-[var(--otp-blue)] uppercase",
@@ -267,7 +267,7 @@ export function SlideRenderer({ data, slide, slideRef, className, style }: Slide
             </div>
           </div>
 
-          <img src="/logos/otp-logo.svg" alt="OTP" className="h-[190px] w-[190px] object-contain" />
+          <img src="/logos/otp-logo.svg" alt="OTP" className="h-[150px] w-[150px] object-contain" />
         </div>
       </header>
 
