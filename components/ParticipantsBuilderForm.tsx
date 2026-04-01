@@ -234,9 +234,13 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                     </span>
                     <input
                       type="text"
-                      placeholder="Ej: 120.000"
+                      inputMode="numeric"
+                      placeholder="Ej: 120000"
                       value={card.valorVoucher ?? ""}
-                      onChange={(event) => updateCard(card.id, { valorVoucher: event.target.value })}
+                      onChange={(event) => {
+                        const filtered = event.target.value.replace(/[^0-9]/g, "");
+                        updateCard(card.id, { valorVoucher: filtered });
+                      }}
                       className="h-[44px] rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)]"
                     />
                   </label>

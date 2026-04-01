@@ -293,10 +293,11 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
         <img
           src={card.fotoDataUrl}
           alt="Participantes del torneo"
-          className="absolute inset-0 size-full object-cover"
+          className="absolute inset-0 size-full object-cover pointer-events-none"
           loading="eager"
           decoding="sync"
           draggable={false}
+          style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none" }}
         />
       ) : null}
 
