@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatToDayMonth } from "@/lib/date";
 import type { ParticipantCard, VoucherPosition } from "@/lib/types";
 
@@ -28,6 +28,21 @@ const CUP_TAG_HEIGHT = 36;
 export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: ParticipantsSlideRendererProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
+  const rafRef = useRef(0);
+  const callbackRef = useRef(onVoucherPositionChange);
+  callbackRef.current = onVoucherPositionChange;
+
+  // Local drag position — kept until the parent confirms the new value
+  const [dragPos, setDragPos] = useState<VoucherPosition | null>(null);
+  const prevCardPosRef = useRef(card.valorVoucherPos);
+
+  // Clear local drag position once the parent prop catches up
+  if (card.valorVoucherPos !== prevCardPosRef.current) {
+    prevCardPosRef.current = card.valorVoucherPos;
+    if (dragPos && !draggingRef.current) {
+      setDragPos(null);
+    }
+  }
 
   const formattedDate = formatToDayMonth(card.fecha);
   const topLabel = `${RESULT_LABEL[card.resultado]} | ${formattedDate || "--/--"}`;
@@ -49,6 +64,7 @@ export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: Par
       const el = containerRef.current;
       if (!el) return null;
       const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return null;
       const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
       const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
       return { x, y };
@@ -56,29 +72,64 @@ export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: Par
     [],
   );
 
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      if (!draggingRef.current) return;
+      e.preventDefault();
+
+      const clientX = e.clientX;
+      const clientY = e.clientY;
+
+      if (rafRef.current) return; // already scheduled
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = 0;
+        if (!draggingRef.current) return;
+        const pos = calcPosition(clientX, clientY);
+        if (pos) setDragPos(pos);
+      });
+    };
+
+    const onUp = (e: PointerEvent) => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = 0;
+      }
+      // Commit final position to parent — keep dragPos until parent confirms
+      const pos = calcPosition(e.clientX, e.clientY);
+      if (pos) {
+        setDragPos(pos);
+        if (callbackRef.current) callbackRef.current(pos);
+      }
+    };
+
+    document.addEventListener("pointermove", onMove, { passive: false });
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+
+    return () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [calcPosition]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!onVoucherPositionChange) return;
+      if (!callbackRef.current) return;
       e.preventDefault();
       e.stopPropagation();
       draggingRef.current = true;
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    },
-    [onVoucherPositionChange],
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!draggingRef.current || !onVoucherPositionChange) return;
       const pos = calcPosition(e.clientX, e.clientY);
-      if (pos) onVoucherPositionChange(pos);
+      if (pos) setDragPos(pos);
     },
-    [onVoucherPositionChange, calcPosition],
+    [calcPosition],
   );
 
-  const handlePointerUp = useCallback(() => {
-    draggingRef.current = false;
-  }, []);
+  // Use local drag position while dragging, otherwise use card data
+  const activePos = dragPos ?? card.valorVoucherPos;
 
   return (
     <div ref={containerRef} className="relative size-full overflow-hidden bg-[#0b38d6] text-[#f5f7ff]">
@@ -97,14 +148,12 @@ export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: Par
         <div
           className={`absolute z-20 select-none ${onVoucherPositionChange ? "cursor-grab active:cursor-grabbing" : ""}`}
           style={{
-            left: `${card.valorVoucherPos.x}%`,
-            top: `${card.valorVoucherPos.y}%`,
+            left: `${activePos.x}%`,
+            top: `${activePos.y}%`,
             transform: `translate(-50%, -50%) rotate(${card.valorVoucherRotation ?? 0}deg)`,
+            touchAction: onVoucherPositionChange ? "none" : undefined,
           }}
           onPointerDown={onVoucherPositionChange ? handlePointerDown : undefined}
-          onPointerMove={onVoucherPositionChange ? handlePointerMove : undefined}
-          onPointerUp={onVoucherPositionChange ? handlePointerUp : undefined}
-          onPointerCancel={onVoucherPositionChange ? handlePointerUp : undefined}
         >
           <span
             className="whitespace-nowrap font-extrabold tracking-[-0.02em] text-black"
