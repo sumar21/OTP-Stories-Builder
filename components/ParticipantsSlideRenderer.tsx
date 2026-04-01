@@ -34,14 +34,12 @@ type GestureState = {
   initialRotation: number;
 };
 
-const getTwoFingerInfo = (a: PointerEvent | React.PointerEvent, b: PointerEvent | React.PointerEvent) => {
+const getTwoFingerInfo = (a: PointerEvent, b: PointerEvent) => {
   const dx = b.clientX - a.clientX;
   const dy = b.clientY - a.clientY;
   return {
     distance: Math.hypot(dx, dy),
     angle: Math.atan2(dy, dx) * (180 / Math.PI),
-    midX: (a.clientX + b.clientX) / 2,
-    midY: (a.clientY + b.clientY) / 2,
   };
 };
 
@@ -58,16 +56,26 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
   const callbackRef = useRef(onVoucherUpdate);
   callbackRef.current = onVoucherUpdate;
 
-  // Multi-touch tracking
+  // Multi-touch tracking — registered on the whole container
   const pointersRef = useRef<Map<number, PointerEvent>>(new Map());
   const gestureRef = useRef<GestureState | null>(null);
+  // Track whether the single-finger down started on the voucher text
+  const dragStartedOnVoucherRef = useRef(false);
+  const pendingCommitRef = useRef(false);
 
-  // Local state during gestures — avoids parent re-renders
   const [local, setLocal] = useState<LocalVoucherState | null>(null);
 
   const cardPos = card.valorVoucherPos;
   const cardSize = card.valorVoucherSize;
   const cardRot = card.valorVoucherRotation;
+
+  // Commit to parent after pointer up (deferred to avoid setState-during-render)
+  useEffect(() => {
+    if (pendingCommitRef.current && local) {
+      pendingCommitRef.current = false;
+      commitToParent(local);
+    }
+  });
 
   // Clear local state once parent catches up
   useEffect(() => {
@@ -117,14 +125,11 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
       const pointers = pointersRef.current;
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, e);
 
-      // Update stored pointer
-      if (pointers.has(e.pointerId)) {
-        pointers.set(e.pointerId, e);
-      }
-
-      // Single finger drag
-      if (draggingRef.current && pointers.size === 1) {
+      // Single finger drag — only if started on voucher text
+      if (draggingRef.current && pointers.size === 1 && dragStartedOnVoucherRef.current) {
         e.preventDefault();
         const clientX = e.clientX;
         const clientY = e.clientY;
@@ -139,7 +144,7 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
         return;
       }
 
-      // Two finger pinch/rotate — only size and rotation, position stays fixed
+      // Two finger pinch/rotate — works anywhere on the container
       if (pointers.size === 2) {
         e.preventDefault();
         const [pA, pB] = Array.from(pointers.values());
@@ -180,27 +185,24 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
 
     const onUp = (e: PointerEvent) => {
       const pointers = pointersRef.current;
+      if (!pointers.has(e.pointerId)) return;
       pointers.delete(e.pointerId);
 
-      // If we go from 2→1 fingers, reset gesture but keep dragging
       if (pointers.size === 1) {
         gestureRef.current = null;
         return;
       }
 
-      // All fingers up
       if (pointers.size === 0) {
         draggingRef.current = false;
+        dragStartedOnVoucherRef.current = false;
         gestureRef.current = null;
         if (rafRef.current) {
           cancelAnimationFrame(rafRef.current);
           rafRef.current = 0;
         }
-        // Commit to parent
-        setLocal((prev) => {
-          if (prev) commitToParent(prev);
-          return prev;
-        });
+        // Defer commit to avoid setState-during-render
+        pendingCommitRef.current = true;
       }
     };
 
@@ -216,28 +218,39 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
     };
   }, [calcPosition, commitToParent, cardSize, cardRot, cardPos, local]);
 
-  const handlePointerDown = useCallback(
+  // Pointer down on the voucher text — enables single-finger drag
+  const handleVoucherPointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!callbackRef.current) return;
       e.preventDefault();
       e.stopPropagation();
-
       pointersRef.current.set(e.pointerId, e.nativeEvent);
-
-      // Only start drag positioning on first finger
-      if (pointersRef.current.size === 1) {
-        draggingRef.current = true;
-      }
-      // Second finger: stop position drag, gesture will start on next move
-      if (pointersRef.current.size === 2) {
-        draggingRef.current = false;
-        gestureRef.current = null;
-      }
+      draggingRef.current = true;
+      dragStartedOnVoucherRef.current = true;
     },
     [],
   );
 
-  // Desktop: wheel = size, shift+wheel = rotation
+  // Pointer down on the container — only used for second finger (pinch)
+  const handleContainerPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!callbackRef.current || !showVoucher) return;
+      const pointers = pointersRef.current;
+
+      // First finger not on voucher → ignore (let normal interaction happen)
+      if (pointers.size === 0) return;
+
+      // Second finger anywhere on container → start pinch gesture
+      e.preventDefault();
+      e.stopPropagation();
+      pointers.set(e.pointerId, e.nativeEvent);
+      draggingRef.current = false;
+      gestureRef.current = null;
+    },
+    [showVoucher],
+  );
+
+  // Desktop: wheel on voucher = size, shift+wheel = rotation
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       if (!callbackRef.current) return;
@@ -249,14 +262,12 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
       const currentPos = local?.pos ?? cardPos;
 
       if (e.shiftKey) {
-        // Rotation
         const delta = e.deltaY > 0 ? 3 : -3;
         const newRotation = Math.max(-180, Math.min(180, currentRotation + delta));
         const newState = { pos: currentPos, size: currentSize, rotation: newRotation };
         setLocal(newState);
         commitToParent(newState);
       } else {
-        // Size
         const delta = e.deltaY > 0 ? -4 : 4;
         const newSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, currentSize + delta));
         const newState = { pos: currentPos, size: newSize, rotation: currentRotation };
@@ -267,13 +278,17 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
     [commitToParent, cardSize, cardRot, cardPos, local],
   );
 
-  // Active display values
   const activePos = local?.pos ?? cardPos;
   const activeSize = local?.size ?? cardSize;
   const activeRotation = local?.rotation ?? cardRot;
 
   return (
-    <div ref={containerRef} className="relative size-full overflow-hidden bg-[#0b38d6] text-[#f5f7ff]">
+    <div
+      ref={containerRef}
+      className="relative size-full overflow-hidden bg-[#0b38d6] text-[#f5f7ff]"
+      style={{ touchAction: onVoucherUpdate && showVoucher ? "none" : undefined }}
+      onPointerDown={onVoucherUpdate ? handleContainerPointerDown : undefined}
+    >
       {card.fotoDataUrl ? (
         <img
           src={card.fotoDataUrl}
@@ -292,9 +307,9 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
             left: `${activePos.x}%`,
             top: `${activePos.y}%`,
             transform: `translate(-50%, -50%) rotate(${activeRotation ?? 0}deg)`,
-            touchAction: onVoucherUpdate ? "none" : undefined,
+            touchAction: "none",
           }}
-          onPointerDown={onVoucherUpdate ? handlePointerDown : undefined}
+          onPointerDown={onVoucherUpdate ? handleVoucherPointerDown : undefined}
           onWheel={onVoucherUpdate ? handleWheel : undefined}
         >
           <span

@@ -121,7 +121,7 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
         <div className="relative mx-auto w-fit rounded-[34px] border border-white/20 bg-[#04186c] p-3 shadow-2xl">
           <div
             className="relative mx-auto overflow-hidden rounded-[26px] bg-[#04186c]"
-            style={{ width: previewWidth, height: previewHeight }}
+            style={{ width: previewWidth, height: previewHeight, touchAction: onVoucherUpdate ? "none" : undefined }}
           >
             <div
               className="absolute left-0 top-0"
