@@ -317,7 +317,7 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
             className="whitespace-nowrap font-extrabold tracking-[-0.02em] text-black"
             style={{ fontSize: `${activeSize}px` }}
           >
-            ${card.valorVoucher}
+            {card.valorVoucher}
           </span>
         </div>
       ) : null}
