@@ -139,14 +139,13 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
         return;
       }
 
-      // Two finger pinch/rotate
+      // Two finger pinch/rotate — only size and rotation, position stays fixed
       if (pointers.size === 2) {
         e.preventDefault();
         const [pA, pB] = Array.from(pointers.values());
         const info = getTwoFingerInfo(pA, pB);
 
         if (!gestureRef.current) {
-          // Start gesture
           gestureRef.current = {
             initialDistance: info.distance,
             initialAngle: info.angle,
@@ -170,9 +169,8 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
           if (angleDelta < -180) angleDelta += 360;
           const newRotation = Math.round(Math.max(-180, Math.min(180, gesture.initialRotation + angleDelta)));
 
-          const pos = calcPosition(info.midX, info.midY);
           setLocal((prev) => ({
-            pos: pos ?? prev?.pos ?? cardPos,
+            pos: prev?.pos ?? cardPos,
             size: newSize,
             rotation: newRotation,
           }));
@@ -225,14 +223,18 @@ export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: Participant
       e.stopPropagation();
 
       pointersRef.current.set(e.pointerId, e.nativeEvent);
-      draggingRef.current = true;
 
+      // Only start drag positioning on first finger
       if (pointersRef.current.size === 1) {
-        const pos = calcPosition(e.clientX, e.clientY);
-        if (pos) setLocal((prev) => ({ pos, size: prev?.size ?? cardSize, rotation: prev?.rotation ?? cardRot }));
+        draggingRef.current = true;
+      }
+      // Second finger: stop position drag, gesture will start on next move
+      if (pointersRef.current.size === 2) {
+        draggingRef.current = false;
+        gestureRef.current = null;
       }
     },
-    [calcPosition, cardSize, cardRot],
+    [],
   );
 
   // Desktop: wheel = size, shift+wheel = rotation
