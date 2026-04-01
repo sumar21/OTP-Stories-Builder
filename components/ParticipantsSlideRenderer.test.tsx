@@ -12,6 +12,10 @@ const buildCard = (override?: Partial<ParticipantCard>): ParticipantCard => ({
   fecha: "2026-01-12",
   resultado: "campeones",
   copa: "oro",
+  valorVoucher: "",
+  valorVoucherPos: { x: 50, y: 40 },
+  valorVoucherSize: 64,
+  valorVoucherRotation: 0,
   ...override,
 });
 

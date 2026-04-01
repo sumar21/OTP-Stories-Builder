@@ -35,6 +35,10 @@ export const buildDefaultParticipantCard = (): ParticipantCard => ({
   fecha: "",
   resultado: "campeones",
   copa: "oro",
+  valorVoucher: "",
+  valorVoucherPos: { x: 50, y: 40 },
+  valorVoucherSize: 64,
+  valorVoucherRotation: 0,
 });
 
 export const defaultParticipantsPostData = (): ParticipantsPost => ({

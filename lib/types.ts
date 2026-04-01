@@ -57,6 +57,8 @@ export type LoosePlayerPost = {
   mano?: Hand;
 };
 
+export type VoucherPosition = { x: number; y: number };
+
 export type ParticipantCard = {
   id: string;
   fotoDataUrl: string;
@@ -66,6 +68,10 @@ export type ParticipantCard = {
   fecha: string;
   resultado: ParticipantsResult;
   copa: ParticipantsCup;
+  valorVoucher: string;
+  valorVoucherPos: VoucherPosition;
+  valorVoucherSize: number;
+  valorVoucherRotation: number;
 };
 
 export type ParticipantsPost = {

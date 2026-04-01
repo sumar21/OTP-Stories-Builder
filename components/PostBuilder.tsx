@@ -29,6 +29,7 @@ import type {
   Sponsor,
   TournamentPostData,
   TournamentSlideData,
+  VoucherPosition,
 } from "@/lib/types";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { validatePostData } from "@/lib/validators";
@@ -255,6 +256,12 @@ const parseParticipantsData = (value: unknown): ParticipantsPost | null => {
       return null;
     }
 
+    const posRaw = isRecord(card.valorVoucherPos) ? card.valorVoucherPos : null;
+    const valorVoucherPos: ParticipantCard["valorVoucherPos"] =
+      posRaw && typeof posRaw.x === "number" && typeof posRaw.y === "number"
+        ? { x: posRaw.x, y: posRaw.y }
+        : { x: 50, y: 40 };
+
     cards.push({
       id: card.id,
       fotoDataUrl: card.fotoDataUrl,
@@ -264,6 +271,10 @@ const parseParticipantsData = (value: unknown): ParticipantsPost | null => {
       fecha: card.fecha,
       resultado: card.resultado as ParticipantCard["resultado"],
       copa: card.copa as ParticipantCard["copa"],
+      valorVoucher: typeof card.valorVoucher === "string" ? card.valorVoucher : "",
+      valorVoucherPos,
+      valorVoucherSize: typeof card.valorVoucherSize === "number" ? card.valorVoucherSize : 64,
+      valorVoucherRotation: typeof card.valorVoucherRotation === "number" ? card.valorVoucherRotation : 0,
     });
   }
 
@@ -752,6 +763,16 @@ export function PostBuilder() {
     setState((previous) => ({ ...previous, participants: next }));
   }, []);
 
+  const handleVoucherPositionChange = useCallback((cardId: string, pos: VoucherPosition) => {
+    setState((previous) => ({
+      ...previous,
+      participants: {
+        ...previous.participants,
+        cards: previous.participants.cards.map((c) => (c.id === cardId ? { ...c, valorVoucherPos: pos } : c)),
+      },
+    }));
+  }, []);
+
   const handlePostTypeChange = (postType: PostType) => {
     setState((previous) => ({ ...previous, activePostType: postType }));
   };
@@ -905,6 +926,7 @@ export function PostBuilder() {
             currentSlide={currentSlide}
             onChangeSlide={setCurrentSlide}
             resizeSignal={mobileTab}
+            onVoucherPositionChange={state.activePostType === "participantes" ? handleVoucherPositionChange : undefined}
           />
         </section>
       </div>

@@ -1,8 +1,10 @@
+import { useCallback, useRef } from "react";
 import { formatToDayMonth } from "@/lib/date";
-import type { ParticipantCard } from "@/lib/types";
+import type { ParticipantCard, VoucherPosition } from "@/lib/types";
 
 type ParticipantsSlideRendererProps = {
   card: ParticipantCard;
+  onVoucherPositionChange?: (pos: VoucherPosition) => void;
 };
 
 const RESULT_LABEL: Record<ParticipantCard["resultado"], string> = {
@@ -23,7 +25,10 @@ const CUP_TAG_SRC: Record<ParticipantCard["copa"], string> = {
 const OTP_LOGO_SRC = "/logos/otp-logo.svg";
 const CUP_TAG_HEIGHT = 36;
 
-export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererProps) {
+export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: ParticipantsSlideRendererProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const draggingRef = useRef(false);
+
   const formattedDate = formatToDayMonth(card.fecha);
   const topLabel = `${RESULT_LABEL[card.resultado]} | ${formattedDate || "--/--"}`;
   const playersLabel = `${card.nombreParticipante1 || "--"} | ${card.nombreParticipante2 || "--"}`;
@@ -37,8 +42,46 @@ export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererPro
           ? "text-[20px]"
           : "text-[16px]";
 
+  const showVoucher = (card.valorVoucher ?? "").trim().length > 0;
+
+  const calcPosition = useCallback(
+    (clientX: number, clientY: number): VoucherPosition | null => {
+      const el = containerRef.current;
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+      return { x, y };
+    },
+    [],
+  );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (!onVoucherPositionChange) return;
+      e.preventDefault();
+      e.stopPropagation();
+      draggingRef.current = true;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [onVoucherPositionChange],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!draggingRef.current || !onVoucherPositionChange) return;
+      const pos = calcPosition(e.clientX, e.clientY);
+      if (pos) onVoucherPositionChange(pos);
+    },
+    [onVoucherPositionChange, calcPosition],
+  );
+
+  const handlePointerUp = useCallback(() => {
+    draggingRef.current = false;
+  }, []);
+
   return (
-    <div className="relative size-full overflow-hidden bg-[#0b38d6] text-[#f5f7ff]">
+    <div ref={containerRef} className="relative size-full overflow-hidden bg-[#0b38d6] text-[#f5f7ff]">
       {card.fotoDataUrl ? (
         <img
           src={card.fotoDataUrl}
@@ -48,6 +91,28 @@ export function ParticipantsSlideRenderer({ card }: ParticipantsSlideRendererPro
           decoding="sync"
           draggable={false}
         />
+      ) : null}
+
+      {showVoucher ? (
+        <div
+          className={`absolute z-20 select-none ${onVoucherPositionChange ? "cursor-grab active:cursor-grabbing" : ""}`}
+          style={{
+            left: `${card.valorVoucherPos.x}%`,
+            top: `${card.valorVoucherPos.y}%`,
+            transform: `translate(-50%, -50%) rotate(${card.valorVoucherRotation ?? 0}deg)`,
+          }}
+          onPointerDown={onVoucherPositionChange ? handlePointerDown : undefined}
+          onPointerMove={onVoucherPositionChange ? handlePointerMove : undefined}
+          onPointerUp={onVoucherPositionChange ? handlePointerUp : undefined}
+          onPointerCancel={onVoucherPositionChange ? handlePointerUp : undefined}
+        >
+          <span
+            className="whitespace-nowrap font-extrabold tracking-[-0.02em] text-black"
+            style={{ fontSize: `${card.valorVoucherSize}px` }}
+          >
+            ${card.valorVoucher}
+          </span>
+        </div>
       ) : null}
 
       <div className="absolute inset-x-[34px] bottom-[34px]" data-testid="participants-card-shell">

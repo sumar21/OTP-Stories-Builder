@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ArrowDown, ArrowUp, CalendarDays, ImagePlus, Medal, Trash2, Trophy } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarDays, DollarSign, ImagePlus, Medal, Trash2, Trophy } from "lucide-react";
 import { CATEGORY_OPTIONS } from "@/lib/tournamentOptions";
 import { buildDefaultParticipantCard } from "@/lib/defaultPostData";
 import type { ParticipantCard, ParticipantsPost, ValidationError } from "@/lib/types";
@@ -188,6 +188,52 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                   </div>
 
                   <div className="grid min-w-0 content-start gap-3">
+                    <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
+                      <span className="inline-flex items-center gap-1.5 tracking-[-0.01em]">
+                        <DollarSign className="size-4 text-[var(--otp-lime)]" />
+                        Valor del voucher
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Ej: 120.000"
+                        value={card.valorVoucher ?? ""}
+                        onChange={(event) => updateCard(card.id, { valorVoucher: event.target.value })}
+                        className="h-[52px] rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)]"
+                      />
+                      {(card.valorVoucher ?? "").trim() ? (
+                        <span className="text-[11px] text-white/50">Arrastrá el texto en la preview para posicionarlo.</span>
+                      ) : null}
+                    </label>
+
+                    {(card.valorVoucher ?? "").trim() ? (
+                      <>
+                      <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
+                        <span className="tracking-[-0.01em]">Tamaño del texto — {card.valorVoucherSize}px</span>
+                        <input
+                          type="range"
+                          min={24}
+                          max={140}
+                          step={2}
+                          value={card.valorVoucherSize ?? 64}
+                          onChange={(event) => updateCard(card.id, { valorVoucherSize: Number(event.target.value) })}
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-[var(--otp-lime)]"
+                        />
+                      </label>
+                      <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
+                        <span className="tracking-[-0.01em]">Rotación — {card.valorVoucherRotation ?? 0}°</span>
+                        <input
+                          type="range"
+                          min={-180}
+                          max={180}
+                          step={1}
+                          value={card.valorVoucherRotation ?? 0}
+                          onChange={(event) => updateCard(card.id, { valorVoucherRotation: Number(event.target.value) })}
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-[var(--otp-lime)]"
+                        />
+                      </label>
+                      </>
+                    ) : null}
+
                     <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
                       <span className="tracking-[-0.01em]">Categoría *</span>
                       <select
