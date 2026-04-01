@@ -163,17 +163,17 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
               </div>
 
               <div className="grid min-w-0 gap-4">
-                <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-                  <div className="rounded-2xl border border-white/12 bg-white/[0.06] p-3">
-                    <div className={`relative h-[150px] overflow-hidden rounded-xl bg-[#08227a] ${errorPaths.has(`cards.${cardIndex}.fotoDataUrl`) ? "ring-2 ring-red-400/60" : ""}`}>
-                      {card.fotoDataUrl ? (
-                        <img src={card.fotoDataUrl} alt={`Foto tarjeta ${cardIndex + 1}`} className="size-full object-cover" />
-                      ) : (
-                        <div className="flex size-full items-center justify-center text-sm text-white/70">Sin foto</div>
-                      )}
-                    </div>
-                    <label className="mt-3 inline-flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--otp-lime)] bg-[var(--otp-lime)] px-4 text-sm font-semibold text-[var(--otp-blue)] shadow-[0_12px_24px_rgba(201,253,46,0.14)] transition hover:brightness-105">
-                      <ImagePlus className="size-5" />
+                <div className="flex items-start gap-3">
+                  <div className={`relative self-stretch w-[160px] shrink-0 overflow-hidden rounded-xl bg-[#08227a] ${errorPaths.has(`cards.${cardIndex}.fotoDataUrl`) ? "ring-2 ring-red-400/60" : ""}`}>
+                    {card.fotoDataUrl ? (
+                      <img src={card.fotoDataUrl} alt={`Foto tarjeta ${cardIndex + 1}`} className="size-full object-cover" />
+                    ) : (
+                      <div className="flex size-full items-center justify-center text-[10px] text-white/60">Sin foto</div>
+                    )}
+                  </div>
+                  <div className="grid min-w-0 flex-1 gap-2">
+                    <label className="inline-flex h-[44px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[var(--otp-lime)] bg-[var(--otp-lime)] px-4 text-sm font-semibold text-[var(--otp-blue)] shadow-[0_12px_24px_rgba(201,253,46,0.14)] transition hover:brightness-105">
+                      <ImagePlus className="size-4" />
                       Subir foto
                       <input
                         type="file"
@@ -185,61 +185,12 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                         }}
                       />
                     </label>
-                  </div>
-
-                  <div className="grid min-w-0 content-start gap-3">
-                    <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
-                      <span className="inline-flex items-center gap-1.5 tracking-[-0.01em]">
-                        <DollarSign className="size-4 text-[var(--otp-lime)]" />
-                        Valor del voucher
-                      </span>
-                      <input
-                        type="text"
-                        placeholder="Ej: 120.000"
-                        value={card.valorVoucher ?? ""}
-                        onChange={(event) => updateCard(card.id, { valorVoucher: event.target.value })}
-                        className="h-[52px] rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)]"
-                      />
-                      {(card.valorVoucher ?? "").trim() ? (
-                        <span className="text-[11px] text-white/50">Arrastrá el texto en la preview para posicionarlo.</span>
-                      ) : null}
-                    </label>
-
-                    {(card.valorVoucher ?? "").trim() ? (
-                      <>
-                      <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
-                        <span className="tracking-[-0.01em]">Tamaño del texto — {card.valorVoucherSize}px</span>
-                        <input
-                          type="range"
-                          min={24}
-                          max={140}
-                          step={2}
-                          value={card.valorVoucherSize ?? 64}
-                          onChange={(event) => updateCard(card.id, { valorVoucherSize: Number(event.target.value) })}
-                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-[var(--otp-lime)]"
-                        />
-                      </label>
-                      <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
-                        <span className="tracking-[-0.01em]">Rotación — {card.valorVoucherRotation ?? 0}°</span>
-                        <input
-                          type="range"
-                          min={-180}
-                          max={180}
-                          step={1}
-                          value={card.valorVoucherRotation ?? 0}
-                          onChange={(event) => updateCard(card.id, { valorVoucherRotation: Number(event.target.value) })}
-                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-[var(--otp-lime)]"
-                        />
-                      </label>
-                      </>
-                    ) : null}
-
-                    <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
+                    <label className="flex min-w-0 flex-col gap-1 text-sm font-medium text-white/82">
                       <span className="tracking-[-0.01em]">Categoría *</span>
                       <select
                         value={card.categoria}
                         onChange={(event) => updateCard(card.id, { categoria: event.target.value })}
-                        className={`h-[52px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.categoria`) ? "border-red-400/60" : "border-white/15"}`}
+                        className={`h-[44px] rounded-xl border bg-white/10 px-3 text-sm text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.categoria`) ? "border-red-400/60" : "border-white/15"}`}
                       >
                         <option value="" className="text-black">
                           Seleccionar categoría
@@ -251,28 +202,74 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                         ))}
                       </select>
                     </label>
-
-                    <div className="grid min-w-0 grid-cols-1 gap-3 2xl:grid-cols-2">
-                      <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
-                        <span className="tracking-[-0.01em]">Participante 1 *</span>
-                        <input
-                          type="text"
-                          value={card.nombreParticipante1}
-                          onChange={(event) => updateCard(card.id, { nombreParticipante1: event.target.value })}
-                          className={`h-[52px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.nombreParticipante1`) ? "border-red-400/60" : "border-white/15"}`}
-                        />
-                      </label>
-                      <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
-                        <span className="tracking-[-0.01em]">Participante 2 *</span>
-                        <input
-                          type="text"
-                          value={card.nombreParticipante2}
-                          onChange={(event) => updateCard(card.id, { nombreParticipante2: event.target.value })}
-                          className={`h-[52px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.nombreParticipante2`) ? "border-red-400/60" : "border-white/15"}`}
-                        />
-                      </label>
-                    </div>
                   </div>
+                </div>
+
+                <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
+                    <span className="tracking-[-0.01em]">Participante 1 *</span>
+                    <input
+                      type="text"
+                      value={card.nombreParticipante1}
+                      onChange={(event) => updateCard(card.id, { nombreParticipante1: event.target.value })}
+                      className={`h-[48px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.nombreParticipante1`) ? "border-red-400/60" : "border-white/15"}`}
+                    />
+                  </label>
+                  <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
+                    <span className="tracking-[-0.01em]">Participante 2 *</span>
+                    <input
+                      type="text"
+                      value={card.nombreParticipante2}
+                      onChange={(event) => updateCard(card.id, { nombreParticipante2: event.target.value })}
+                      className={`h-[48px] rounded-xl border bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)] ${errorPaths.has(`cards.${cardIndex}.nombreParticipante2`) ? "border-red-400/60" : "border-white/15"}`}
+                    />
+                  </label>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                  <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-white/82">
+                    <span className="inline-flex items-center gap-1.5 tracking-[-0.01em]">
+                      <DollarSign className="size-4 text-[var(--otp-lime)]" />
+                      Valor del voucher
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Ej: 120.000"
+                      value={card.valorVoucher ?? ""}
+                      onChange={(event) => updateCard(card.id, { valorVoucher: event.target.value })}
+                      className="h-[44px] rounded-xl border border-white/15 bg-white/10 px-4 text-base text-white outline-none transition focus:border-[var(--otp-lime)]"
+                    />
+                  </label>
+
+                  {(card.valorVoucher ?? "").trim() ? (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-white/70">
+                        <span>Tamaño — {card.valorVoucherSize ?? 64}px</span>
+                        <input
+                          type="range"
+                          min={24}
+                          max={140}
+                          step={2}
+                          value={card.valorVoucherSize ?? 64}
+                          onChange={(event) => updateCard(card.id, { valorVoucherSize: Number(event.target.value) })}
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-[var(--otp-lime)]"
+                        />
+                      </label>
+                      <label className="flex min-w-0 flex-col gap-1.5 text-xs font-medium text-white/70">
+                        <span>Rotación — {card.valorVoucherRotation ?? 0}°</span>
+                        <input
+                          type="range"
+                          min={-180}
+                          max={180}
+                          step={1}
+                          value={card.valorVoucherRotation ?? 0}
+                          onChange={(event) => updateCard(card.id, { valorVoucherRotation: Number(event.target.value) })}
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-[var(--otp-lime)]"
+                        />
+                      </label>
+                      <p className="text-[11px] text-white/45 sm:col-span-2">Arrastrá el texto en la preview para posicionarlo.</p>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="grid min-w-0 gap-4 2xl:grid-cols-3">
@@ -290,12 +287,12 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                     />
                   </label>
 
-                  <fieldset className={`m-0 min-w-0 border-0 ${controlPanelClass}`}>
-                    <legend className={controlTitleClass}>
+                  <div className={`flex flex-col text-xs font-medium text-white/80 ${controlPanelClass}`}>
+                    <span className={controlTitleClass}>
                       <Medal className="size-4 text-[var(--otp-lime)]" />
                       Resultado
-                    </legend>
-                    <p className={controlHintClass}>Elegi el puesto alcanzado por la pareja.</p>
+                    </span>
+                    <span className={controlHintClass}>Elegi el puesto alcanzado por la pareja.</span>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       {RESULT_OPTIONS.map((option) => {
                         const isSelected = card.resultado === option.value;
@@ -312,14 +309,14 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                         );
                       })}
                     </div>
-                  </fieldset>
+                  </div>
 
-                  <fieldset className={`m-0 min-w-0 border-0 ${controlPanelClass}`}>
-                    <legend className={controlTitleClass}>
+                  <div className={`flex flex-col text-xs font-medium text-white/80 ${controlPanelClass}`}>
+                    <span className={controlTitleClass}>
                       <Trophy className="size-4 text-[var(--otp-lime)]" />
                       Copa
-                    </legend>
-                    <p className={controlHintClass}>Selecciona la copa correspondiente.</p>
+                    </span>
+                    <span className={controlHintClass}>Selecciona la copa correspondiente.</span>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       {CUP_OPTIONS.map((option) => {
                         const isSelected = card.copa === option.value;
@@ -336,7 +333,7 @@ export function ParticipantsBuilderForm({ data, onChange, onReset, errors }: Par
                         );
                       })}
                     </div>
-                  </fieldset>
+                  </div>
                 </div>
               </div>
             </article>
