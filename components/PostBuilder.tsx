@@ -29,7 +29,7 @@ import type {
   Sponsor,
   TournamentPostData,
   TournamentSlideData,
-  VoucherPosition,
+  VoucherPatch,
 } from "@/lib/types";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { validatePostData } from "@/lib/validators";
@@ -763,12 +763,12 @@ export function PostBuilder() {
     setState((previous) => ({ ...previous, participants: next }));
   }, []);
 
-  const handleVoucherPositionChange = useCallback((cardId: string, pos: VoucherPosition) => {
+  const handleVoucherUpdate = useCallback((cardId: string, patch: VoucherPatch) => {
     setState((previous) => ({
       ...previous,
       participants: {
         ...previous.participants,
-        cards: previous.participants.cards.map((c) => (c.id === cardId ? { ...c, valorVoucherPos: pos } : c)),
+        cards: previous.participants.cards.map((c) => (c.id === cardId ? { ...c, ...patch } : c)),
       },
     }));
   }, []);
@@ -926,7 +926,7 @@ export function PostBuilder() {
             currentSlide={currentSlide}
             onChangeSlide={setCurrentSlide}
             resizeSignal={mobileTab}
-            onVoucherPositionChange={state.activePostType === "participantes" ? handleVoucherPositionChange : undefined}
+            onVoucherUpdate={state.activePostType === "participantes" ? handleVoucherUpdate : undefined}
           />
         </section>
       </div>

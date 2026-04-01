@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatToDayMonth } from "@/lib/date";
-import type { ParticipantCard, VoucherPosition } from "@/lib/types";
+import type { ParticipantCard, VoucherPatch, VoucherPosition } from "@/lib/types";
 
 type ParticipantsSlideRendererProps = {
   card: ParticipantCard;
-  onVoucherPositionChange?: (pos: VoucherPosition) => void;
+  onVoucherUpdate?: (patch: VoucherPatch) => void;
 };
 
 const RESULT_LABEL: Record<ParticipantCard["resultado"], string> = {
@@ -24,25 +24,57 @@ const CUP_TAG_SRC: Record<ParticipantCard["copa"], string> = {
 
 const OTP_LOGO_SRC = "/logos/otp-logo.svg";
 const CUP_TAG_HEIGHT = 36;
+const MIN_SIZE = 24;
+const MAX_SIZE = 140;
 
-export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: ParticipantsSlideRendererProps) {
+type GestureState = {
+  initialDistance: number;
+  initialAngle: number;
+  initialSize: number;
+  initialRotation: number;
+};
+
+const getTwoFingerInfo = (a: PointerEvent | React.PointerEvent, b: PointerEvent | React.PointerEvent) => {
+  const dx = b.clientX - a.clientX;
+  const dy = b.clientY - a.clientY;
+  return {
+    distance: Math.hypot(dx, dy),
+    angle: Math.atan2(dy, dx) * (180 / Math.PI),
+    midX: (a.clientX + b.clientX) / 2,
+    midY: (a.clientY + b.clientY) / 2,
+  };
+};
+
+type LocalVoucherState = {
+  pos: VoucherPosition;
+  size: number;
+  rotation: number;
+};
+
+export function ParticipantsSlideRenderer({ card, onVoucherUpdate }: ParticipantsSlideRendererProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
   const rafRef = useRef(0);
-  const callbackRef = useRef(onVoucherPositionChange);
-  callbackRef.current = onVoucherPositionChange;
+  const callbackRef = useRef(onVoucherUpdate);
+  callbackRef.current = onVoucherUpdate;
 
-  // Local drag position — kept until the parent confirms the new value
-  const [dragPos, setDragPos] = useState<VoucherPosition | null>(null);
-  const prevCardPosRef = useRef(card.valorVoucherPos);
+  // Multi-touch tracking
+  const pointersRef = useRef<Map<number, PointerEvent>>(new Map());
+  const gestureRef = useRef<GestureState | null>(null);
 
-  // Clear local drag position once the parent prop catches up
-  if (card.valorVoucherPos !== prevCardPosRef.current) {
-    prevCardPosRef.current = card.valorVoucherPos;
-    if (dragPos && !draggingRef.current) {
-      setDragPos(null);
+  // Local state during gestures — avoids parent re-renders
+  const [local, setLocal] = useState<LocalVoucherState | null>(null);
+
+  const cardPos = card.valorVoucherPos;
+  const cardSize = card.valorVoucherSize;
+  const cardRot = card.valorVoucherRotation;
+
+  // Clear local state once parent catches up
+  useEffect(() => {
+    if (local && !draggingRef.current && pointersRef.current.size === 0) {
+      setLocal(null);
     }
-  }
+  }, [cardPos, cardSize, cardRot, local]);
 
   const formattedDate = formatToDayMonth(card.fecha);
   const topLabel = `${RESULT_LABEL[card.resultado]} | ${formattedDate || "--/--"}`;
@@ -72,35 +104,105 @@ export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: Par
     [],
   );
 
+  const commitToParent = useCallback((state: LocalVoucherState) => {
+    if (callbackRef.current) {
+      callbackRef.current({
+        valorVoucherPos: state.pos,
+        valorVoucherSize: state.size,
+        valorVoucherRotation: state.rotation,
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
-      if (!draggingRef.current) return;
-      e.preventDefault();
+      const pointers = pointersRef.current;
 
-      const clientX = e.clientX;
-      const clientY = e.clientY;
+      // Update stored pointer
+      if (pointers.has(e.pointerId)) {
+        pointers.set(e.pointerId, e);
+      }
 
-      if (rafRef.current) return; // already scheduled
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = 0;
-        if (!draggingRef.current) return;
-        const pos = calcPosition(clientX, clientY);
-        if (pos) setDragPos(pos);
-      });
+      // Single finger drag
+      if (draggingRef.current && pointers.size === 1) {
+        e.preventDefault();
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+
+        if (rafRef.current) return;
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = 0;
+          if (!draggingRef.current) return;
+          const pos = calcPosition(clientX, clientY);
+          if (pos) setLocal((prev) => ({ pos, size: prev?.size ?? cardSize, rotation: prev?.rotation ?? cardRot }));
+        });
+        return;
+      }
+
+      // Two finger pinch/rotate
+      if (pointers.size === 2) {
+        e.preventDefault();
+        const [pA, pB] = Array.from(pointers.values());
+        const info = getTwoFingerInfo(pA, pB);
+
+        if (!gestureRef.current) {
+          // Start gesture
+          gestureRef.current = {
+            initialDistance: info.distance,
+            initialAngle: info.angle,
+            initialSize: local?.size ?? cardSize,
+            initialRotation: local?.rotation ?? cardRot,
+          };
+          return;
+        }
+
+        if (rafRef.current) return;
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = 0;
+          const gesture = gestureRef.current;
+          if (!gesture || pointers.size !== 2) return;
+
+          const scale = info.distance / gesture.initialDistance;
+          const newSize = Math.round(Math.max(MIN_SIZE, Math.min(MAX_SIZE, gesture.initialSize * scale)));
+
+          let angleDelta = info.angle - gesture.initialAngle;
+          if (angleDelta > 180) angleDelta -= 360;
+          if (angleDelta < -180) angleDelta += 360;
+          const newRotation = Math.round(Math.max(-180, Math.min(180, gesture.initialRotation + angleDelta)));
+
+          const pos = calcPosition(info.midX, info.midY);
+          setLocal((prev) => ({
+            pos: pos ?? prev?.pos ?? cardPos,
+            size: newSize,
+            rotation: newRotation,
+          }));
+        });
+      }
     };
 
     const onUp = (e: PointerEvent) => {
-      if (!draggingRef.current) return;
-      draggingRef.current = false;
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = 0;
+      const pointers = pointersRef.current;
+      pointers.delete(e.pointerId);
+
+      // If we go from 2→1 fingers, reset gesture but keep dragging
+      if (pointers.size === 1) {
+        gestureRef.current = null;
+        return;
       }
-      // Commit final position to parent — keep dragPos until parent confirms
-      const pos = calcPosition(e.clientX, e.clientY);
-      if (pos) {
-        setDragPos(pos);
-        if (callbackRef.current) callbackRef.current(pos);
+
+      // All fingers up
+      if (pointers.size === 0) {
+        draggingRef.current = false;
+        gestureRef.current = null;
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = 0;
+        }
+        // Commit to parent
+        setLocal((prev) => {
+          if (prev) commitToParent(prev);
+          return prev;
+        });
       }
     };
 
@@ -114,22 +216,59 @@ export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: Par
       document.removeEventListener("pointercancel", onUp);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [calcPosition]);
+  }, [calcPosition, commitToParent, cardSize, cardRot, cardPos, local]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!callbackRef.current) return;
       e.preventDefault();
       e.stopPropagation();
+
+      pointersRef.current.set(e.pointerId, e.nativeEvent);
       draggingRef.current = true;
-      const pos = calcPosition(e.clientX, e.clientY);
-      if (pos) setDragPos(pos);
+
+      if (pointersRef.current.size === 1) {
+        const pos = calcPosition(e.clientX, e.clientY);
+        if (pos) setLocal((prev) => ({ pos, size: prev?.size ?? cardSize, rotation: prev?.rotation ?? cardRot }));
+      }
     },
-    [calcPosition],
+    [calcPosition, cardSize, cardRot],
   );
 
-  // Use local drag position while dragging, otherwise use card data
-  const activePos = dragPos ?? card.valorVoucherPos;
+  // Desktop: wheel = size, shift+wheel = rotation
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      if (!callbackRef.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const currentSize = local?.size ?? cardSize;
+      const currentRotation = local?.rotation ?? cardRot;
+      const currentPos = local?.pos ?? cardPos;
+
+      if (e.shiftKey) {
+        // Rotation
+        const delta = e.deltaY > 0 ? 3 : -3;
+        const newRotation = Math.max(-180, Math.min(180, currentRotation + delta));
+        const newState = { pos: currentPos, size: currentSize, rotation: newRotation };
+        setLocal(newState);
+        commitToParent(newState);
+      } else {
+        // Size
+        const delta = e.deltaY > 0 ? -4 : 4;
+        const newSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, currentSize + delta));
+        const newState = { pos: currentPos, size: newSize, rotation: currentRotation };
+        setLocal(newState);
+        commitToParent(newState);
+      }
+    },
+    [commitToParent, cardSize, cardRot, cardPos, local],
+  );
+
+  // Active display values
+  const activePos = local?.pos ?? cardPos;
+  const activeSize = local?.size ?? cardSize;
+  const activeRotation = local?.rotation ?? cardRot;
 
   return (
     <div ref={containerRef} className="relative size-full overflow-hidden bg-[#0b38d6] text-[#f5f7ff]">
@@ -146,18 +285,19 @@ export function ParticipantsSlideRenderer({ card, onVoucherPositionChange }: Par
 
       {showVoucher ? (
         <div
-          className={`absolute z-20 select-none ${onVoucherPositionChange ? "cursor-grab active:cursor-grabbing" : ""}`}
+          className={`absolute z-20 select-none ${onVoucherUpdate ? "cursor-grab active:cursor-grabbing" : ""}`}
           style={{
             left: `${activePos.x}%`,
             top: `${activePos.y}%`,
-            transform: `translate(-50%, -50%) rotate(${card.valorVoucherRotation ?? 0}deg)`,
-            touchAction: onVoucherPositionChange ? "none" : undefined,
+            transform: `translate(-50%, -50%) rotate(${activeRotation ?? 0}deg)`,
+            touchAction: onVoucherUpdate ? "none" : undefined,
           }}
-          onPointerDown={onVoucherPositionChange ? handlePointerDown : undefined}
+          onPointerDown={onVoucherUpdate ? handlePointerDown : undefined}
+          onWheel={onVoucherUpdate ? handleWheel : undefined}
         >
           <span
             className="whitespace-nowrap font-extrabold tracking-[-0.02em] text-black"
-            style={{ fontSize: `${card.valorVoucherSize}px` }}
+            style={{ fontSize: `${activeSize}px` }}
           >
             ${card.valorVoucher}
           </span>

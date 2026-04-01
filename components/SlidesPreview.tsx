@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SlideRenderer } from "@/components/SlideRenderer";
 import { getPostFormat, getSlideSize } from "@/lib/slideFormat";
-import type { PostData, SlideData, VoucherPosition } from "@/lib/types";
+import type { PostData, SlideData, VoucherPatch } from "@/lib/types";
 
 type SlidesPreviewProps = {
   data: PostData;
@@ -11,7 +11,7 @@ type SlidesPreviewProps = {
   currentSlide: number;
   onChangeSlide: (index: number) => void;
   resizeSignal?: string;
-  onVoucherPositionChange?: (cardId: string, pos: VoucherPosition) => void;
+  onVoucherUpdate?: (cardId: string, patch: VoucherPatch) => void;
 };
 
 const PREVIEW_TARGET_WIDTH = 395;
@@ -39,7 +39,7 @@ const getSlideAriaLabel = (slide: SlideData, index: number): string => {
   return `Slide ${index + 1}`;
 };
 
-export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resizeSignal, onVoucherPositionChange }: SlidesPreviewProps) {
+export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resizeSignal, onVoucherUpdate }: SlidesPreviewProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [previewWidth, setPreviewWidth] = useState(PREVIEW_TARGET_WIDTH);
 
@@ -132,7 +132,7 @@ export function SlidesPreview({ data, slides, currentSlide, onChangeSlide, resiz
                 transformOrigin: "top left",
               }}
             >
-              <SlideRenderer data={data} slide={activeSlide} className="slides-preview-render" onVoucherPositionChange={onVoucherPositionChange} />
+              <SlideRenderer data={data} slide={activeSlide} className="slides-preview-render" onVoucherUpdate={onVoucherUpdate} />
             </div>
           </div>
         </div>

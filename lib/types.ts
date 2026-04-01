@@ -58,6 +58,7 @@ export type LoosePlayerPost = {
 };
 
 export type VoucherPosition = { x: number; y: number };
+export type VoucherPatch = Partial<Pick<ParticipantCard, "valorVoucherPos" | "valorVoucherSize" | "valorVoucherRotation">>;
 
 export type ParticipantCard = {
   id: string;

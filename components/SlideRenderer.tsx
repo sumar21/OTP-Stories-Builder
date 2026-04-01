@@ -7,7 +7,7 @@ import { SponsorsFooter } from "@/components/SponsorsFooter";
 import { formatToDayMonth } from "@/lib/date";
 import { getPostFormat, getSlideSize } from "@/lib/slideFormat";
 import { TOURNAMENT_COVER_IMAGE_BY_VARIANT } from "@/lib/tournamentCoverOptions";
-import type { DaySlice, Gender, PostData, SlideData, Status, TournamentPostData, VoucherPosition } from "@/lib/types";
+import type { DaySlice, Gender, PostData, SlideData, Status, TournamentPostData, VoucherPatch } from "@/lib/types";
 
 type SlideRendererProps = {
   data: PostData;
@@ -15,7 +15,7 @@ type SlideRendererProps = {
   slideRef?: Ref<HTMLDivElement>;
   className?: string;
   style?: CSSProperties;
-  onVoucherPositionChange?: (cardId: string, pos: VoucherPosition) => void;
+  onVoucherUpdate?: (cardId: string, patch: VoucherPatch) => void;
 };
 
 const statusConfig: Record<
@@ -145,7 +145,7 @@ const TournamentCoverSlide = ({ data }: { data: TournamentPostData }) => {
   );
 };
 
-export function SlideRenderer({ data, slide, slideRef, className, style, onVoucherPositionChange }: SlideRendererProps) {
+export function SlideRenderer({ data, slide, slideRef, className, style, onVoucherUpdate }: SlideRendererProps) {
   const postFormat = getPostFormat(data);
   const slideSize = getSlideSize(postFormat);
 
@@ -216,7 +216,7 @@ export function SlideRenderer({ data, slide, slideRef, className, style, onVouch
       >
         <ParticipantsSlideRenderer
           card={slide.card}
-          onVoucherPositionChange={onVoucherPositionChange ? (pos) => onVoucherPositionChange(slide.card.id, pos) : undefined}
+          onVoucherUpdate={onVoucherUpdate ? (patch) => onVoucherUpdate(slide.card.id, patch) : undefined}
         />
       </div>
     );
